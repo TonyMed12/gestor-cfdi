@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #e3e7ec;
+  --color-text: #111827;
+  --color-text-muted: #4b5563;
+  --color-accent: #0e7c66;
+  --color-accent-hover: #08493d;
+  --color-accent-soft: #e6f4f0;
+  --color-accent-soft-text: #0b6352;
+  --color-warn-soft: #fde7c3;
+  --color-warn-soft-text: #7a3e00;
+  --color-sat-soft: #e8eef6;
+  --color-sat-soft-text: #1f3b5c;
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-soft-text: var(--color-accent-soft-text);
+  --color-warn-soft: var(--color-warn-soft);
+  --color-warn-soft-text: var(--color-warn-soft-text);
+  --color-sat-soft: var(--color-sat-soft);
+  --color-sat-soft-text: var(--color-sat-soft-text);
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: var(--color-accent-soft-text);
+}
+a:hover {
+  color: var(--color-accent-hover);
+}
