@@ -23,7 +23,38 @@ Fuera de esta entrega, por tiempo: lectura de PDF y escaneos con OCR (RF-13 a RF
 
 ## Ya hecho (sprint 0)
 
-Pantallas del mockup en Next.js, inicio y cierre de sesión con Supabase Auth, protección de rutas, tabla `clientes` con RLS por usuario, alta y lista de clientes, README.
+Pantallas del mockup en Next.js, inicio y cierre de sesión con Supabase Auth, protección de rutas, tabla `clientes` con RLS, alta y lista de clientes, README.
+
+## Cómo leer los códigos
+
+Cada tarea tiene un código `SX-NN`: la `S` es de sprint, `X` es el número del sprint y `NN` el número de la tarea dentro de él. Por ejemplo, `S1-03` es la tarea 3 del sprint 1.
+
+## Avance a la fecha (9 de noviembre de 2026)
+
+| Tarea | Estado | Nota |
+| --- | --- | --- |
+| S1-01 | Hecho | Esquema de la base ejecutado en Supabase (`02-esquema.sql`) |
+| S1-02 | Hecho | Clientes ligados al despacho (`03-clientes-por-despacho.sql`) |
+| S1-03 | Hecho | Alta, lista y desactivación de usuarios; la asignación de clientes a cada contador se aplazó |
+| S1-04 | Hecho | Permisos por rol (`04-permisos-por-rol.sql`) |
+| S1-05 | Por probar | Función de bitácora, que se usa al subir archivos; falta comprobar las filas en la tabla `bitacora` |
+| S1-06 | Hecho | Almacenamiento privado `facturas` (`05-almacenamiento.sql`) |
+| S1-07 | Hecho | Carga múltiple con validación de tipo y tamaño |
+| S1-08 | Hecho | Huella SHA-256 y aviso de duplicado |
+| S1-09 | Por probar | Descompresión de ZIP; falta probarla con un ZIP real |
+| S1-10 | Hecho | Lista de archivos con estado y botón para verlos |
+| S1-12 | Hecho | El servicio de estatus del SAT responde desde un servidor sin credenciales; falta probarlo con una factura real y desde el hospedaje final |
+| S1-11 | Hecho | Lector de XML con `fast-xml-parser` y pruebas automáticas (`npm test`) |
+| S1-13 | Parcial | Uso de CFDI y régimen cargados; falta importar la clave de producto o servicio |
+| S2-01 | Hecho | Lee comprobante, emisor, receptor y timbre del CFDI 4.0, probado con facturas reales |
+| S2-02 | Hecho | Conceptos con varias tasas, retenciones, exentos e impuestos locales |
+| S2-03 | Hecho | Rechaza XML inválido, que no sea CFDI, sin timbre o de otra versión, con su motivo |
+| S2-05 | Hecho | Comprueba que los importes y los impuestos sumen el total y que el UUID no se repita |
+| S2-06 | Hecho | El RFC del cliente debe ser el emisor o el receptor de la factura |
+| S2-08 | Parcial | Módulo de consulta al SAT escrito y probado; falta conectarlo al guardado de la factura |
+| S2-09 | Hecho | El XML se lee automáticamente al subirlo (`07-lectura-xml.sql`) |
+| S2-10 | Parcial | Excluye facturas cuyos importes no suman; falta excluir las canceladas |
+| S2-11 | Parcial | 15 pruebas automáticas con XML de ejemplo; falta ampliar el conjunto |
 
 ---
 

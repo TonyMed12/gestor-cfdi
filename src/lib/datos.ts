@@ -50,6 +50,64 @@ export async function getUsuarios(): Promise<UsuarioDespacho[]> {
   return data;
 }
 
+export type ArchivoCliente = {
+  id: string;
+  nombre: string;
+  ruta: string;
+  tipo: string;
+  estado: string;
+  recibidoEn: string;
+  motivoError: string | null;
+  factura: {
+    uuid: string;
+    emisor: string;
+    receptor: string;
+    total: string;
+    moneda: string;
+  } | null;
+};
+
+type FilaFactura = {
+  uuid_fiscal: string;
+  rfc_emisor: string;
+  nombre_emisor: string | null;
+  rfc_receptor: string;
+  nombre_receptor: string | null;
+  total: string;
+  moneda: string;
+};
+
+export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("archivo")
+    .select(
+      "id, tipo, estado, ruta_original, recibido_en, motivo_error, factura(uuid_fiscal, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, total, moneda)",
+    )
+    .eq("cliente_id", clienteId)
+    .order("recibido_en", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer los archivos: ${error.message}`);
+  return data.map((a) => {
+    const f = (a.factura as FilaFactura[])[0];
+    return {
+      id: a.id,
+      nombre: a.ruta_original.split("/").pop() ?? a.ruta_original,
+      ruta: a.ruta_original,
+      tipo: a.tipo,
+      estado: a.estado,
+      recibidoEn: a.recibido_en,
+      motivoError: a.motivo_error,
+      factura: f && {
+        uuid: f.uuid_fiscal,
+        emisor: f.nombre_emisor ?? f.rfc_emisor,
+        receptor: f.nombre_receptor ?? f.rfc_receptor,
+        total: f.total,
+        moneda: f.moneda,
+      },
+    };
+  });
+}
+
 export async function getClientes(): Promise<Cliente[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
