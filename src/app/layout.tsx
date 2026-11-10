@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { NOMBRE_APP } from "@/lib/config";
+
+const fuenteSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--fuente-sans",
+});
+const fuenteMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--fuente-mono",
+});
 
 export const metadata: Metadata = {
   title: NOMBRE_APP,
@@ -10,19 +22,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className="h-full antialiased">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="es"
+      className={`h-full antialiased ${fuenteSans.variable} ${fuenteMono.variable}`}
+    >
       <body className="min-h-full flex flex-col bg-bg text-text">
         {children}
       </body>

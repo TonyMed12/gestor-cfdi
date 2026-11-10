@@ -34,7 +34,7 @@ Este repositorio contiene el frontend. Se desarrolla como proyecto escolar, por 
 
    Debe usarse la clave pública (`sb_publishable_...` o `anon`). La clave secreta no debe colocarse en estas variables.
 
-3. Crear las tablas ejecutando, en el editor SQL de Supabase, los scripts de la carpeta `supabase/` en orden numérico.
+3. Crear las tablas ejecutando, en el editor SQL de Supabase, los scripts de la carpeta `supabase/` en orden numérico. El equipo comparte un único proyecto de Supabase, de modo que los cambios de esquema se integran siempre como un script nuevo con el siguiente número.
 
 4. Crear un usuario en *Authentication > Users* de Supabase para poder iniciar sesión.
 

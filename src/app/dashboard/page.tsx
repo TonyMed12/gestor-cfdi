@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { NOMBRE_APP } from "@/lib/config";
-import { getClientes } from "@/lib/datos";
-import { DESPACHO, PERIODO_ACTUAL } from "@/lib/mock-data";
-import { supabaseServidor } from "@/lib/supabase-servidor";
+import { getClientes, getPerfil } from "@/lib/datos";
+import { getPeriodoActual } from "@/lib/mock-data";
 import type { Cliente } from "@/lib/types";
 
 export const metadata = { title: `Tablero · ${NOMBRE_APP}` };
@@ -33,8 +32,7 @@ const armarResumen = (clientes: Cliente[]) => [
 ];
 
 export default async function DashboardPage() {
-  const { data: { user } } = await (await supabaseServidor()).auth.getUser();
-  const correo = user?.email ?? "";
+  const perfil = await getPerfil();
   const clientes = await getClientes();
   const resumen = armarResumen(clientes);
 
@@ -43,7 +41,7 @@ export default async function DashboardPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-sm text-text-muted">
-            {DESPACHO} · Periodo abierto: {PERIODO_ACTUAL}
+            {perfil?.despacho || "Sin despacho"} · Periodo abierto: {getPeriodoActual()}
           </span>
           <h1 className="m-0 text-[30px] font-bold">
             Pendientes por cliente
@@ -51,9 +49,12 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DCE3EA] font-semibold">
-            {correo.slice(0, 2).toUpperCase()}
+            {(perfil?.nombre ?? "").slice(0, 2).toUpperCase()}
           </span>
-          <span className="font-semibold">{correo}</span>
+          <div className="flex flex-col">
+            <span className="font-semibold">{perfil?.nombre}</span>
+            <span className="text-text-muted capitalize">{perfil?.rol}</span>
+          </div>
         </div>
       </header>
 

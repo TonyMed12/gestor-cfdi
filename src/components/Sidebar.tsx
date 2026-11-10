@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BotonSalir } from "./BotonSalir";
+import { EnlaceUsuarios } from "./EnlaceUsuarios";
 import { Logo } from "./Logo";
 import { NOMBRE_APP } from "@/lib/config";
 import { getTotalPorRevisar } from "@/lib/mock-data";
@@ -46,6 +47,7 @@ export function Sidebar({ active }: { active: string }) {
           </Link>
         );
       })}
+      <EnlaceUsuarios active={active} />
       <BotonSalir />
     </nav>
   );

@@ -3,9 +3,15 @@
 
 import type { Cliente, Factura } from "./types";
 
-export const PERIODO_ACTUAL = "octubre 2026";
-export const DESPACHO = "Mi despacho";
-export const USUARIO_ACTUAL = { nombre: "Usuario", rol: "Contador" };
+// Mes en curso, por ejemplo "noviembre 2026". Se reemplazará por los periodos reales de la base.
+export const getPeriodoActual = () =>
+  new Intl.DateTimeFormat("es-MX", {
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Mexico_City",
+  })
+    .format(new Date())
+    .replace(" de ", " ");
 
 export const clientes: Cliente[] = [];
 export const facturas: Factura[] = [];

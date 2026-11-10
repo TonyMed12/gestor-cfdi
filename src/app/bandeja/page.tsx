@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { NOMBRE_APP } from "@/lib/config";
-import { getFacturasPorRevisar } from "@/lib/mock-data";
+import { getFacturasPorRevisar, getPeriodoActual } from "@/lib/mock-data";
 
 export const metadata = { title: `Bandeja de revisión · ${NOMBRE_APP}` };
 
@@ -17,7 +17,7 @@ export default function BandejaPage() {
     <AppShell active="/bandeja">
       <header className="flex flex-col gap-1">
         <span className="text-sm text-text-muted">
-          Todos los clientes · octubre 2026
+          Todos los clientes · {getPeriodoActual()}
         </span>
         <h1 className="m-0 text-[30px] font-bold">Bandeja de revisión</h1>
         <p className="m-0 text-[15px] text-text-muted">

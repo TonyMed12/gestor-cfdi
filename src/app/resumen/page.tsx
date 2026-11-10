@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { NOMBRE_APP } from "@/lib/config";
-import { getResumenPeriodo, PERIODO_ACTUAL } from "@/lib/mock-data";
+import { getPeriodoActual, getResumenPeriodo } from "@/lib/mock-data";
 
 export const metadata = { title: `Resumen del periodo · ${NOMBRE_APP}` };
 
@@ -26,7 +26,7 @@ export default function ResumenPage() {
           Sin cliente seleccionado
         </span>
         <h1 className="m-0 text-[30px] font-bold">
-          Resumen del periodo · {PERIODO_ACTUAL}
+          Resumen del periodo · {getPeriodoActual()}
         </h1>
         <p className="m-0 text-[15px] text-text-muted">
           {resumen.totalIncluidas} facturas clasificadas incluidas ·{" "}

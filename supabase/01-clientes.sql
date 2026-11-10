@@ -1,4 +1,4 @@
--- Paso 3: primera tabla. Se pega en Supabase > SQL Editor > Run.
+-- Tabla de clientes. Ejecutar en Supabase > SQL Editor.
 
 -- 1) La tabla. Un renglón = un cliente del despacho.
 create table public.clientes (
