@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
 import { getArchivos, getCliente } from "@/lib/datos";
 import { SubirArchivos } from "./SubirArchivos";
@@ -79,7 +80,8 @@ export default async function ClienteDetallePage({
                         <div className="text-[13px] text-text-muted">
                           {a.factura.emisor} → {a.factura.receptor} ·{" "}
                           {Number(a.factura.total).toLocaleString("es-MX", { style: "currency", currency: a.factura.moneda })} ·{" "}
-                          <span className="font-mono">{a.factura.uuid.slice(0, 8)}</span>
+                          <span className="font-mono">{a.factura.uuid.slice(0, 8)}</span> · SAT:{" "}
+                          {a.factura.estadoSat ? ESTADO_SAT[a.factura.estadoSat].texto : "sin consultar"}
                         </div>
                       )}
                       {a.motivoError && (
@@ -98,7 +100,13 @@ export default async function ClienteDetallePage({
                       <Badge variant={estado.variant}>{estado.text}</Badge>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <VerArchivo ruta={a.ruta} />
+                      {a.tipo === "xml" ? (
+                        <Link href={`/clientes/${cliente.id}/archivos/${a.id}`} className="text-sm font-semibold">
+                          Ver
+                        </Link>
+                      ) : (
+                        <VerArchivo ruta={a.ruta} />
+                      )}
                     </td>
                   </tr>
                 );

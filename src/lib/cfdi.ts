@@ -206,3 +206,140 @@ export function leerCfdi(xml: string): CfdiLeido | { error: string } {
     exclusion,
   };
 }
+
+// ---------- Resumen para mostrar en pantalla ----------
+// A diferencia de leerCfdi, no rechaza nada: muestra lo que el XML traiga, aunque esté incompleto.
+
+export type DetalleCfdi = {
+  version: string | null;
+  tipo: string | null;
+  timbrado: boolean;
+  serie: string | null;
+  folio: string | null;
+  fecha: string | null;
+  lugarExpedicion: string | null;
+  moneda: string | null;
+  metodoPago: string | null;
+  formaPago: string | null;
+  subtotal: string | null;
+  descuento: string | null;
+  total: string | null;
+  traslados: { impuesto: string; importe: string }[];
+  retenciones: { impuesto: string; importe: string }[];
+  locales: { tipo: "traslado" | "retención"; nombre: string; importe: string }[];
+  emisor: { rfc: string | null; nombre: string | null; regimen: string | null };
+  receptor: { rfc: string | null; nombre: string | null; uso: string | null; codigoPostal: string | null; regimen: string | null };
+  uuid: string | null;
+  fechaTimbrado: string | null;
+  conceptos: {
+    clave: string | null;
+    descripcion: string | null;
+    cantidad: string | null;
+    valorUnitario: string | null;
+    importe: string | null;
+    claveUnidad: string | null;
+    unidad: string | null;
+    impuestos: { tipo: "trasladado" | "retenido"; impuesto: string; tasa: string | null; importe: string }[];
+  }[];
+};
+
+const nombreImpuesto = (codigo: string | undefined) =>
+  codigo && codigo in IMPUESTOS ? IMPUESTOS[codigo as keyof typeof IMPUESTOS] : (codigo ?? "Impuesto");
+const dinero = (s: string | undefined) => (s !== undefined && DINERO.test(s) ? s : null);
+
+// Suma por tipo de impuesto (IVA, ISR, IEPS) con aritmética en centavos.
+function agrupar(nodos: { impuesto: string; importe: string }[]) {
+  const suma = new Map<string, number>();
+  for (const n of nodos) suma.set(n.impuesto, (suma.get(n.impuesto) ?? 0) + centavos(n.importe));
+  return Array.from(suma, ([impuesto, cents]) => ({ impuesto, importe: (cents / 100).toFixed(2) }));
+}
+
+export function detalleCfdi(xml: string): DetalleCfdi | { error: string } {
+  let raiz: unknown;
+  try {
+    raiz = parser.parse(xml);
+  } catch {
+    return { error: "El archivo no es un XML válido" };
+  }
+  const c = hijo(raiz, "Comprobante");
+  if (!c) return { error: "No es un CFDI: no tiene el nodo Comprobante" };
+
+  const emisor = hijo(c, "Emisor");
+  const receptor = hijo(c, "Receptor");
+  const complementos = lista(hijo(c, "Complemento"));
+  const timbre = complementos.map((x) => hijo(x, "TimbreFiscalDigital")).find(Boolean);
+  const locales = complementos.map((x) => hijo(x, "ImpuestosLocales")).find(Boolean);
+
+  const conceptos = lista(hijo(hijo(c, "Conceptos"), "Concepto")).map((nodo) => {
+    const bloque = hijo(nodo, "Impuestos");
+    const impuestos = [
+      ...lista(hijo(hijo(bloque, "Traslados"), "Traslado")).map((n) => ({ tipo: "trasladado" as const, n })),
+      ...lista(hijo(hijo(bloque, "Retenciones"), "Retencion")).map((n) => ({ tipo: "retenido" as const, n })),
+    ]
+      .filter(({ n }) => attr(n, "TipoFactor") !== "Exento" && dinero(attr(n, "Importe")))
+      .map(({ tipo, n }) => ({
+        tipo,
+        impuesto: nombreImpuesto(attr(n, "Impuesto")),
+        tasa: attr(n, "TasaOCuota") ?? null,
+        importe: attr(n, "Importe")!,
+      }));
+    return {
+      clave: attr(nodo, "ClaveProdServ") ?? null,
+      descripcion: attr(nodo, "Descripcion") ?? null,
+      cantidad: attr(nodo, "Cantidad") ?? null,
+      valorUnitario: attr(nodo, "ValorUnitario") ?? null,
+      importe: attr(nodo, "Importe") ?? null,
+      claveUnidad: attr(nodo, "ClaveUnidad") ?? null,
+      unidad: attr(nodo, "Unidad") ?? null,
+      impuestos,
+    };
+  });
+
+  // Totales de impuestos: los del comprobante si vienen; si no, la suma de los conceptos.
+  const global = hijo(c, "Impuestos");
+  const globales = (nodos: unknown[]) =>
+    nodos.flatMap((n) => {
+      const importe = dinero(attr(n, "Importe"));
+      return importe ? [{ impuesto: nombreImpuesto(attr(n, "Impuesto")), importe }] : [];
+    });
+  let traslados = agrupar(globales(lista(hijo(hijo(global, "Traslados"), "Traslado"))));
+  let retenciones = agrupar(globales(lista(hijo(hijo(global, "Retenciones"), "Retencion"))));
+  if (traslados.length === 0 && retenciones.length === 0) {
+    const todos = conceptos.flatMap((k) => k.impuestos);
+    traslados = agrupar(todos.filter((i) => i.tipo === "trasladado"));
+    retenciones = agrupar(todos.filter((i) => i.tipo === "retenido"));
+  }
+
+  return {
+    version: attr(c, "Version") ?? attr(c, "version") ?? null,
+    tipo: attr(c, "TipoDeComprobante") ?? null,
+    timbrado: Boolean(attr(timbre, "UUID")),
+    serie: attr(c, "Serie") ?? null,
+    folio: attr(c, "Folio") ?? null,
+    fecha: attr(c, "Fecha") ?? null,
+    lugarExpedicion: attr(c, "LugarExpedicion") ?? null,
+    moneda: attr(c, "Moneda") ?? null,
+    metodoPago: attr(c, "MetodoPago") ?? null,
+    formaPago: attr(c, "FormaPago") ?? null,
+    subtotal: dinero(attr(c, "SubTotal")),
+    descuento: dinero(attr(c, "Descuento")),
+    total: dinero(attr(c, "Total")),
+    traslados,
+    retenciones,
+    locales: [
+      ...lista(hijo(locales, "TrasladosLocales")).map((n) => ({ tipo: "traslado" as const, nombre: attr(n, "ImpLocTrasladado") ?? "Impuesto local", importe: dinero(attr(n, "Importe")) })),
+      ...lista(hijo(locales, "RetencionesLocales")).map((n) => ({ tipo: "retención" as const, nombre: attr(n, "ImpLocRetenido") ?? "Impuesto local", importe: dinero(attr(n, "Importe")) })),
+    ].flatMap((l) => (l.importe ? [{ ...l, importe: l.importe }] : [])),
+    emisor: { rfc: attr(emisor, "Rfc") ?? null, nombre: attr(emisor, "Nombre") ?? null, regimen: attr(emisor, "RegimenFiscal") ?? null },
+    receptor: {
+      rfc: attr(receptor, "Rfc") ?? null,
+      nombre: attr(receptor, "Nombre") ?? null,
+      uso: attr(receptor, "UsoCFDI") ?? null,
+      codigoPostal: attr(receptor, "DomicilioFiscalReceptor") ?? null,
+      regimen: attr(receptor, "RegimenFiscalReceptor") ?? null,
+    },
+    uuid: attr(timbre, "UUID") ?? null,
+    fechaTimbrado: attr(timbre, "FechaTimbrado") ?? null,
+    conceptos,
+  };
+}

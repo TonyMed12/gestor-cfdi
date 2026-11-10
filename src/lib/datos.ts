@@ -64,10 +64,12 @@ export type ArchivoCliente = {
     receptor: string;
     total: string;
     moneda: string;
+    estadoSat: string | null;
   } | null;
 };
 
 type FilaFactura = {
+  estado_sat: string | null;
   uuid_fiscal: string;
   rfc_emisor: string;
   nombre_emisor: string | null;
@@ -82,7 +84,7 @@ export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> 
   const { data, error } = await supabase
     .from("archivo")
     .select(
-      "id, tipo, estado, ruta_original, recibido_en, motivo_error, factura(uuid_fiscal, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, total, moneda)",
+      "id, tipo, estado, ruta_original, recibido_en, motivo_error, factura(uuid_fiscal, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, total, moneda, estado_sat)",
     )
     .eq("cliente_id", clienteId)
     .order("recibido_en", { ascending: false });
@@ -103,9 +105,41 @@ export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> 
         receptor: f.nombre_receptor ?? f.rfc_receptor,
         total: f.total,
         moneda: f.moneda,
+        estadoSat: f.estado_sat,
       },
     };
   });
+}
+
+// Archivo de un cliente y su contenido original (el XML tal como se subió).
+export async function getArchivoParaVer(clienteId: string, archivoId: string) {
+  const supabase = await supabaseServidor();
+  const { data: archivo } = await supabase
+    .from("archivo")
+    .select("id, tipo, estado, motivo_error, ruta_original, recibido_en, factura(estado_sat, fecha_consulta_sat)")
+    .eq("id", archivoId)
+    .eq("cliente_id", clienteId)
+    .maybeSingle();
+  if (!archivo) return undefined;
+  const { data: descarga } = await supabase.storage.from("facturas").download(archivo.ruta_original);
+  const f = (archivo.factura as { estado_sat: string | null; fecha_consulta_sat: string | null }[])[0];
+  return {
+    archivo,
+    xml: descarga ? await descarga.text() : null,
+    sat: f ? { estado: f.estado_sat, consultadoEn: f.fecha_consulta_sat } : null,
+  };
+}
+
+// Descripciones de los catálogos del SAT para las claves que aparecen en una factura.
+export async function getDescripcionesSat(usos: string[], regimenes: string[]) {
+  const supabase = await supabaseServidor();
+  const [uso, regimen] = await Promise.all([
+    supabase.from("cat_uso_cfdi").select("clave, descripcion").in("clave", usos),
+    supabase.from("cat_regimen_fiscal").select("clave, descripcion").in("clave", regimenes),
+  ]);
+  const aMapa = (filas: { clave: string; descripcion: string }[] | null) =>
+    Object.fromEntries((filas ?? []).map((f) => [f.clave, f.descripcion]));
+  return { uso: aMapa(uso.data), regimen: aMapa(regimen.data) };
 }
 
 export async function getClientes(): Promise<Cliente[]> {

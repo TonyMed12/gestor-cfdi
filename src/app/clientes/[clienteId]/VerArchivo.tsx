@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { urlArchivo } from "./acciones";
 
-export function VerArchivo({ ruta }: { ruta: string }) {
+export function VerArchivo({ ruta, etiqueta = "Ver" }: { ruta: string; etiqueta?: string }) {
   const [error, setError] = useState("");
   const [abriendo, setAbriendo] = useState(false);
 
@@ -31,7 +31,7 @@ export function VerArchivo({ ruta }: { ruta: string }) {
         disabled={abriendo}
         className="text-sm font-semibold text-accent hover:underline disabled:opacity-60"
       >
-        Ver
+        {etiqueta}
       </button>
       {error && (
         <span role="alert" className="text-[13px] text-warn-soft-text">
