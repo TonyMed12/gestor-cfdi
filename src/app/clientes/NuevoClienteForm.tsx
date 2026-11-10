@@ -46,7 +46,7 @@ export function NuevoClienteForm() {
           name="razon"
           required
           placeholder="Nombre del cliente"
-          className="h-[46px] rounded-lg border border-[#C9D1DA] px-3.5 text-[15px]"
+          className="h-[46px] rounded-lg border border-[#8A96A3] px-3.5 text-[15px]"
         />
       </div>
       <div className="flex min-w-[200px] flex-col gap-2">
@@ -60,13 +60,13 @@ export function NuevoClienteForm() {
           pattern="[A-Za-zÑñ&]{3,4}[0-9]{6}[A-Za-z0-9]{3}"
           title="RFC de 12 o 13 caracteres"
           placeholder="RFC del cliente"
-          className="h-[46px] rounded-lg border border-[#C9D1DA] px-3.5 font-mono text-[15px] uppercase"
+          className="h-[46px] rounded-lg border border-[#8A96A3] px-3.5 font-mono text-[15px] uppercase"
         />
       </div>
       <button
         type="submit"
         disabled={guardando}
-        className="h-[46px] rounded-lg bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+        className="h-[46px] rounded-lg bg-accent px-5 text-sm font-semibold text-white enabled:hover:bg-accent-hover disabled:opacity-60"
       >
         {guardando ? "Guardando…" : "Agregar cliente"}
       </button>

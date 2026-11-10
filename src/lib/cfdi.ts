@@ -57,6 +57,7 @@ const lista = (x: unknown): unknown[] => (Array.isArray(x) ? x : x === undefined
 const DINERO = /^\d+(\.\d+)?$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FECHA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+const MONEDA = /^[A-Z]{3}$/;
 const IMPUESTOS = { "001": "ISR", "002": "IVA", "003": "IEPS" } as const;
 const centavos = (s: string) => Math.round(Number(s) * 100);
 
@@ -90,7 +91,8 @@ export function leerCfdi(xml: string): CfdiLeido | { error: string } {
   }
   const moneda = attr(c, "Moneda")!;
   const fecha = attr(c, "Fecha")!;
-  if (moneda.length !== 3 || !FECHA.test(fecha)) return { error: "Moneda o fecha del comprobante con formato inválido" };
+  // La moneda es una clave del catálogo c_Moneda del SAT (ISO 4217): tres letras mayúsculas.
+  if (!MONEDA.test(moneda) || !FECHA.test(fecha)) return { error: "Moneda o fecha del comprobante con formato inválido" };
 
   const timbre = lista(hijo(c, "Complemento")).map((x) => hijo(x, "TimbreFiscalDigital")).find(Boolean);
   const uuid = attr(timbre, "UUID");

@@ -26,9 +26,16 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const enLogin = request.nextUrl.pathname === "/login";
 
-  // Limitación: al redirigir no se copian las cookies renovadas.
-  if (!user && !enLogin) return NextResponse.redirect(new URL("/login", request.url));
-  if (user && enLogin) return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Al redirigir se copian las cookies que Supabase acaba de renovar; si se pierden, el navegador
+  // conserva un token ya rotado y la sesión puede cerrarse en la siguiente renovación.
+  const redirigir = (ruta: string) => {
+    const redireccion = NextResponse.redirect(new URL(ruta, request.url));
+    response.cookies.getAll().forEach((cookie) => redireccion.cookies.set(cookie));
+    return redireccion;
+  };
+
+  if (!user && !enLogin) return redirigir("/login");
+  if (user && enLogin) return redirigir("/dashboard");
   return response;
 }
 

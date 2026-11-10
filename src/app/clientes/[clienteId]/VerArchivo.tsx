@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { urlArchivo } from "./acciones";
 
-export function VerArchivo({ ruta, etiqueta = "Ver" }: { ruta: string; etiqueta?: string }) {
+export function VerArchivo({ ruta, nombre, etiqueta = "Ver" }: { ruta: string; nombre?: string; etiqueta?: string }) {
   const [error, setError] = useState("");
   const [abriendo, setAbriendo] = useState(false);
 
@@ -29,7 +29,8 @@ export function VerArchivo({ ruta, etiqueta = "Ver" }: { ruta: string; etiqueta?
         type="button"
         onClick={ver}
         disabled={abriendo}
-        className="text-sm font-semibold text-accent hover:underline disabled:opacity-60"
+        aria-label={nombre ? `${etiqueta} ${nombre}` : undefined}
+        className="text-sm font-semibold text-accent enabled:hover:underline disabled:opacity-60"
       >
         {etiqueta}
       </button>

@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { leerCfdi } from "@/lib/cfdi";
 import { consultarEstadoSat } from "@/lib/sat";
+import { dinero } from "@/lib/formato";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { supabaseServidor } from "@/lib/supabase-servidor";
 
+type Lectura = { ok: boolean; texto: string };
+
 // Lee un XML ya subido: valida el CFDI y guarda la factura con sus conceptos e impuestos.
-export async function procesarXml(archivoId: string): Promise<{ ok: boolean; texto: string }> {
+export async function procesarXml(archivoId: string): Promise<Lectura> {
   const supabase = await supabaseServidor();
 
   // Pasa de "recibido" a "leyendo"; si otro proceso ya lo tomó, no se procesa dos veces.
@@ -49,7 +53,9 @@ export async function procesarXml(archivoId: string): Promise<{ ok: boolean; tex
   });
   const exclusion = leido.exclusion ?? (sat === "cancelada" ? "Cancelada ante el SAT" : null);
 
-  const { error } = await supabase.rpc("guardar_factura", {
+  // El permiso ya se comprobó con la sesión del usuario al reservar el archivo (RLS).
+  // La factura la guarda el servidor con la clave de servicio: nadie puede guardarla desde el navegador.
+  const { error } = await supabaseAdmin().rpc("guardar_factura", {
     p_archivo: archivoId,
     p_factura: {
       ...factura,
@@ -71,9 +77,8 @@ export async function procesarXml(archivoId: string): Promise<{ ok: boolean; tex
 
   revalidatePath(`/clientes/${archivo.cliente_id}`);
   if (exclusion) return { ok: false, texto: `Leída, pero excluida: ${exclusion}` };
-  const total = Number(factura.total).toLocaleString("es-MX", { style: "currency", currency: factura.moneda });
   const estadoSat = sat ? ESTADO_SAT[sat].texto : "sin consultar";
-  return { ok: true, texto: `Guardado y leído: ${factura.rfc_emisor} → ${factura.rfc_receptor} · ${total} · SAT: ${estadoSat}` };
+  return { ok: true, texto: `Leído y guardado: ${factura.rfc_emisor} → ${factura.rfc_receptor} · ${dinero(factura.total, factura.moneda)} · SAT: ${estadoSat}` };
 }
 
 // Vuelve a preguntar al SAT por una factura ya leída (por ejemplo, si no respondió o si pudo cancelarse después).
@@ -107,11 +112,51 @@ export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; 
   const { data: actualizada } = await supabase.from("factura").update(cambios).eq("id", factura.id).select("id");
   if (!actualizada?.length) return { ok: false, texto: "No tienes permiso para actualizar la factura" };
   if (sat === "cancelada") {
-    await supabase.from("archivo").update({ estado: "error", motivo_error: cambios.motivo_exclusion }).eq("id", archivoId);
+    // El paso por_revisar → error no se permite desde la sesión del usuario (script de endurecimiento):
+    // el permiso ya se comprobó al actualizar la factura con RLS, así que el archivo lo marca el servidor.
+    await supabaseAdmin().from("archivo").update({ estado: "error", motivo_error: cambios.motivo_exclusion }).eq("id", archivoId);
   }
 
   revalidatePath(`/clientes/${factura.cliente_id}`);
   return { ok: true, texto: `Estado ante el SAT: ${ESTADO_SAT[sat].texto}` };
+}
+
+// Vuelve a leer un XML que quedó con error, sin leer o atorado en "leyendo" más de 5 minutos.
+// No aplica si ya tiene factura (por ejemplo, una factura excluida porque sus importes no cuadran).
+export async function reintentarLectura(archivoId: string): Promise<Lectura> {
+  const supabase = await supabaseServidor();
+  // Con la sesión del usuario: RLS confirma que el archivo es de su despacho.
+  const { data: archivo } = await supabase
+    .from("archivo")
+    .select("id, tipo, estado, recibido_en, factura(id)")
+    .eq("id", archivoId)
+    .maybeSingle();
+  if (!archivo || archivo.tipo !== "xml") return { ok: false, texto: "El archivo no está disponible para leerse" };
+
+  // La relación llega como objeto o null (factura.archivo_id es único); se acepta también una lista.
+  const relacion = archivo.factura as { id: string } | { id: string }[] | null;
+  const tieneFactura = Array.isArray(relacion) ? relacion.length > 0 : Boolean(relacion);
+  const atorado = archivo.estado === "leyendo" && Date.now() - new Date(archivo.recibido_en).getTime() > 5 * 60_000;
+  if (tieneFactura || !(archivo.estado === "error" || archivo.estado === "recibido" || atorado)) {
+    return { ok: false, texto: "Este archivo no se puede volver a leer" };
+  }
+
+  if (archivo.estado !== "recibido") {
+    // Volver a "recibido" no es un paso permitido desde la sesión del usuario (script 08): lo hace el servidor.
+    const { data, error } = await supabaseAdmin()
+      .from("archivo")
+      .update({ estado: "recibido", motivo_error: null })
+      .eq("id", archivoId).eq("estado", archivo.estado)
+      .select("id");
+    if (error) {
+      return {
+        ok: false,
+        texto: error.code === "23505" ? "Ya hay otra copia de este archivo en el repositorio" : "No se pudo reintentar la lectura",
+      };
+    }
+    if (!data?.length) return { ok: false, texto: "El archivo cambió mientras tanto; recarga la página" };
+  }
+  return procesarXml(archivoId);
 }
 
 // Enlace que vence en 60 segundos para abrir un archivo privado.

@@ -5,6 +5,8 @@ import { Badge } from "@/components/Badge";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
 import { getArchivos, getCliente } from "@/lib/datos";
+import { dinero } from "@/lib/formato";
+import { ReintentarLectura } from "./ReintentarLectura";
 import { SubirArchivos } from "./SubirArchivos";
 import { VerArchivo } from "./VerArchivo";
 
@@ -79,7 +81,7 @@ export default async function ClienteDetallePage({
                       {a.factura && (
                         <div className="text-[13px] text-text-muted">
                           {a.factura.emisor} → {a.factura.receptor} ·{" "}
-                          {Number(a.factura.total).toLocaleString("es-MX", { style: "currency", currency: a.factura.moneda })} ·{" "}
+                          {dinero(a.factura.total, a.factura.moneda)} ·{" "}
                           <span className="font-mono">{a.factura.uuid.slice(0, 8)}</span> · SAT:{" "}
                           {a.factura.estadoSat ? ESTADO_SAT[a.factura.estadoSat].texto : "sin consultar"}
                         </div>
@@ -100,13 +102,18 @@ export default async function ClienteDetallePage({
                       <Badge variant={estado.variant}>{estado.text}</Badge>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      {a.tipo === "xml" ? (
-                        <Link href={`/clientes/${cliente.id}/archivos/${a.id}`} className="text-sm font-semibold">
-                          Ver
-                        </Link>
-                      ) : (
-                        <VerArchivo ruta={a.ruta} />
-                      )}
+                      <div className="flex flex-col items-end gap-1.5">
+                        {a.tipo === "xml" ? (
+                          <Link href={`/clientes/${cliente.id}/archivos/${a.id}`} aria-label={`Ver ${a.nombre}`} className="text-sm font-semibold">
+                            Ver
+                          </Link>
+                        ) : (
+                          <VerArchivo ruta={a.ruta} nombre={a.nombre} />
+                        )}
+                        {a.tipo === "xml" && !a.factura && ["error", "recibido", "leyendo"].includes(a.estado) && (
+                          <ReintentarLectura archivoId={a.id} nombre={a.nombre} />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

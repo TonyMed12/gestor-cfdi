@@ -7,29 +7,32 @@ import type { Cliente } from "@/lib/types";
 
 export const metadata = { title: `Tablero · ${NOMBRE_APP}` };
 
-const armarResumen = (clientes: Cliente[]) => [
-  {
-    label: "Archivos sin leer",
-    valor: clientes.reduce((s, c) => s + c.sinLeer, 0),
-    nota: "Se están leyendo ahora",
-  },
-  {
-    label: "Por revisar",
-    valor: clientes.reduce((s, c) => s + c.porRevisar, 0),
-    nota: "Esperan tu aprobación",
-    destacado: true,
-  },
-  {
-    label: "Con error",
-    valor: clientes.reduce((s, c) => s + c.conError, 0),
-    nota: "Todo se pudo leer",
-  },
-  {
-    label: "XML faltantes",
-    valor: clientes.reduce((s, c) => s + c.faltantes, 0),
-    nota: "Ya se avisó al cliente",
-  },
-];
+const armarResumen = (clientes: Cliente[]) => {
+  const conError = clientes.reduce((s, c) => s + c.conError, 0);
+  return [
+    {
+      label: "Archivos sin leer",
+      valor: clientes.reduce((s, c) => s + c.sinLeer, 0),
+      nota: "Recibidos o en lectura",
+    },
+    {
+      label: "Por revisar",
+      valor: clientes.reduce((s, c) => s + c.porRevisar, 0),
+      nota: "Esperan tu aprobación",
+      destacado: true,
+    },
+    {
+      label: "Con error",
+      valor: conError,
+      nota: conError > 0 ? "Revisa el motivo en cada cliente" : "Todo se pudo leer",
+    },
+    {
+      label: "XML faltantes",
+      valor: clientes.reduce((s, c) => s + c.faltantes, 0),
+      nota: "Aún no se calcula",
+    },
+  ];
+};
 
 export default async function DashboardPage() {
   const perfil = await getPerfil();

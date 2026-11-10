@@ -39,7 +39,7 @@ export function LoginForm() {
           required
           autoComplete="email"
           placeholder="correo@despacho.mx"
-          className="h-[46px] rounded-lg border border-[#C9D1DA] px-3.5 text-[15px]"
+          className="h-[46px] rounded-lg border border-[#8A96A3] px-3.5 text-[15px]"
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -53,7 +53,7 @@ export function LoginForm() {
           required
           autoComplete="current-password"
           placeholder="Tu contraseña"
-          className="h-[46px] rounded-lg border border-[#C9D1DA] px-3.5 text-[15px]"
+          className="h-[46px] rounded-lg border border-[#8A96A3] px-3.5 text-[15px]"
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -65,7 +65,7 @@ export function LoginForm() {
           inputMode="numeric"
           disabled
           placeholder="000 000"
-          className="h-[46px] rounded-lg border border-[#C9D1DA] bg-bg px-3.5 font-mono text-lg tracking-[0.2em] disabled:cursor-not-allowed"
+          className="h-[46px] rounded-lg border border-[#8A96A3] bg-bg px-3.5 font-mono text-lg tracking-[0.2em] disabled:cursor-not-allowed"
         />
       </div>
       {error && (
@@ -76,7 +76,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={cargando}
-        className="flex h-12 items-center justify-center rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+        className="flex h-12 items-center justify-center rounded-lg bg-accent text-base font-semibold text-white enabled:hover:bg-accent-hover disabled:opacity-60"
       >
         {cargando ? "Entrando…" : "Entrar"}
       </button>

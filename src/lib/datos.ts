@@ -1,17 +1,24 @@
 import type { Cliente } from "./types";
 import { supabaseServidor } from "./supabase-servidor";
 
-type FilaCliente = { id: string; razon_social: string; rfc: string };
+type FilaCliente = {
+  id: string;
+  razon_social: string;
+  rfc: string;
+  sin_leer?: number;
+  por_revisar?: number;
+  con_error?: number;
+};
 
 // Convierte las columnas de la base (razon_social) a los campos de la app (razonSocial).
-// Los contadores quedan en 0 hasta que exista la tabla de facturas.
+// Los contadores vienen de la vista resumen_cliente (script 08); "faltantes" aún no se calcula.
 const aCliente = (f: FilaCliente): Cliente => ({
   id: f.id,
   razonSocial: f.razon_social,
   rfc: f.rfc,
-  sinLeer: 0,
-  porRevisar: 0,
-  conError: 0,
+  sinLeer: Number(f.sin_leer ?? 0),
+  porRevisar: Number(f.por_revisar ?? 0),
+  conError: Number(f.con_error ?? 0),
   faltantes: 0,
 });
 
@@ -79,6 +86,11 @@ type FilaFactura = {
   moneda: string;
 };
 
+// Supabase devuelve una relación como lista si puede haber varias filas, o como objeto (o null)
+// si es de uno a uno. factura.archivo_id es único desde el script 08, así que llega como objeto.
+const unaFila = <T>(relacion: T | T[] | null | undefined): T | null =>
+  Array.isArray(relacion) ? (relacion[0] ?? null) : (relacion ?? null);
+
 export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
@@ -90,7 +102,7 @@ export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> 
     .order("recibido_en", { ascending: false });
   if (error) throw new Error(`No se pudieron leer los archivos: ${error.message}`);
   return data.map((a) => {
-    const f = (a.factura as FilaFactura[])[0];
+    const f = unaFila(a.factura as FilaFactura | FilaFactura[] | null);
     return {
       id: a.id,
       nombre: a.ruta_original.split("/").pop() ?? a.ruta_original,
@@ -111,6 +123,8 @@ export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> 
   });
 }
 
+type FilaSat = { estado_sat: string | null; fecha_consulta_sat: string | null };
+
 // Archivo de un cliente y su contenido original (el XML tal como se subió).
 export async function getArchivoParaVer(clienteId: string, archivoId: string) {
   const supabase = await supabaseServidor();
@@ -122,7 +136,7 @@ export async function getArchivoParaVer(clienteId: string, archivoId: string) {
     .maybeSingle();
   if (!archivo) return undefined;
   const { data: descarga } = await supabase.storage.from("facturas").download(archivo.ruta_original);
-  const f = (archivo.factura as { estado_sat: string | null; fecha_consulta_sat: string | null }[])[0];
+  const f = unaFila(archivo.factura as FilaSat | FilaSat[] | null);
   return {
     archivo,
     xml: descarga ? await descarga.text() : null,
@@ -145,8 +159,8 @@ export async function getDescripcionesSat(usos: string[], regimenes: string[]) {
 export async function getClientes(): Promise<Cliente[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
-    .from("clientes")
-    .select("id, razon_social, rfc")
+    .from("resumen_cliente")
+    .select("id, razon_social, rfc, sin_leer, por_revisar, con_error")
     .order("razon_social");
   if (error) throw new Error(`No se pudieron leer los clientes: ${error.message}`);
   return data.map(aCliente);

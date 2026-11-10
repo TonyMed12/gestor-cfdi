@@ -10,8 +10,10 @@ const links = [
   { href: "/clientes", label: "Clientes y archivos" },
   { href: "/bandeja", label: "Bandeja de revisión", badge: true },
   { href: "/resumen", label: "Resúmenes por periodo" },
-  { href: "#", label: "Reglas y categorías" },
 ];
+
+// Secciones del menú que todavía no existen: se muestran deshabilitadas en lugar de un enlace a "#".
+const proximamente = ["Reglas y categorías"];
 
 export function Sidebar({ active }: { active: string }) {
   const pendientes = getTotalPorRevisar();
@@ -35,7 +37,7 @@ export function Sidebar({ active }: { active: string }) {
             className={`flex min-h-11 items-center justify-between rounded-lg px-3 text-[15px] no-underline ${
               isActive
                 ? "bg-accent-soft font-semibold text-accent-soft-text"
-                : "text-[#374151] hover:bg-bg"
+                : "text-[#374151] hover:bg-bg focus-visible:bg-bg"
             }`}
           >
             <span>{link.label}</span>
@@ -47,6 +49,16 @@ export function Sidebar({ active }: { active: string }) {
           </Link>
         );
       })}
+      {proximamente.map((nombre) => (
+        <span
+          key={nombre}
+          aria-disabled="true"
+          title="Disponible próximamente"
+          className="flex min-h-11 items-center rounded-lg px-3 text-[15px] text-[#6B7280]"
+        >
+          {nombre}
+        </span>
+      ))}
       <EnlaceUsuarios active={active} />
       <BotonSalir />
     </nav>

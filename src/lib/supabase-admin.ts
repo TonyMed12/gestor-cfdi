@@ -1,3 +1,4 @@
+import "server-only"; // falla la compilación si algún componente de cliente lo importa
 import { createClient } from "@supabase/supabase-js";
 
 // Cliente con la clave de servicio: salta RLS. Usar solo en acciones de servidor.

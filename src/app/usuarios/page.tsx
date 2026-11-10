@@ -52,7 +52,7 @@ export default async function UsuariosPage() {
                   {u.id === perfil.id ? (
                     <span className="text-sm text-text-muted">Tú</span>
                   ) : (
-                    <BotonEstadoUsuario id={u.id} activo={u.activo} />
+                    <BotonEstadoUsuario id={u.id} activo={u.activo} nombre={u.nombre} />
                   )}
                 </td>
               </tr>

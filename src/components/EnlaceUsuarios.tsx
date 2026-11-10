@@ -29,7 +29,7 @@ export function EnlaceUsuarios({ active }: { active: string }) {
       className={`flex min-h-11 items-center rounded-lg px-3 text-[15px] no-underline ${
         isActive
           ? "bg-accent-soft font-semibold text-accent-soft-text"
-          : "text-[#374151] hover:bg-bg"
+          : "text-[#374151] hover:bg-bg focus-visible:bg-bg"
       }`}
     >
       Usuarios

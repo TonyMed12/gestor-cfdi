@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { crearUsuario } from "./acciones";
 
-const campo = "h-[46px] rounded-lg border border-[#C9D1DA] bg-surface px-3.5 text-[15px]";
+const campo = "h-[46px] rounded-lg border border-[#8A96A3] bg-surface px-3.5 text-[15px]";
 
 export function NuevoUsuarioForm() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [verContrasena, setVerContrasena] = useState(false);
 
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,6 +22,7 @@ export function NuevoUsuarioForm() {
       return;
     }
     form.reset();
+    setVerContrasena(false);
   }
 
   return (
@@ -47,20 +49,32 @@ export function NuevoUsuarioForm() {
       </div>
       <div className="flex min-w-[200px] flex-col gap-2">
         <label htmlFor="contrasena" className="text-sm font-semibold">Contraseña temporal</label>
-        <input
-          id="contrasena"
-          name="contrasena"
-          required
-          minLength={8}
-          autoComplete="off"
-          placeholder="Mínimo 8 caracteres"
-          className={campo}
-        />
+        <div className="flex gap-2">
+          <input
+            id="contrasena"
+            name="contrasena"
+            type={verContrasena ? "text" : "password"}
+            required
+            minLength={8}
+            autoComplete="new-password"
+            placeholder="Mínimo 8 caracteres"
+            className={`${campo} min-w-0 flex-1`}
+          />
+          <button
+            type="button"
+            onClick={() => setVerContrasena((v) => !v)}
+            aria-pressed={verContrasena}
+            aria-controls="contrasena"
+            className="h-[46px] rounded-lg border border-[#8A96A3] px-3 text-sm font-semibold enabled:hover:bg-bg"
+          >
+            {verContrasena ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
       </div>
       <button
         type="submit"
         disabled={enviando}
-        className="h-[46px] rounded-lg bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+        className="h-[46px] rounded-lg bg-accent px-5 text-sm font-semibold text-white enabled:hover:bg-accent-hover disabled:opacity-60"
       >
         {enviando ? "Creando…" : "Crear usuario"}
       </button>

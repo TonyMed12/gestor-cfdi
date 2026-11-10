@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cambiarEstadoUsuario } from "./acciones";
 
-export function BotonEstadoUsuario({ id, activo }: { id: string; activo: boolean }) {
+export function BotonEstadoUsuario({ id, activo, nombre }: { id: string; activo: boolean; nombre: string }) {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -22,7 +22,8 @@ export function BotonEstadoUsuario({ id, activo }: { id: string; activo: boolean
         type="button"
         onClick={cambiar}
         disabled={enviando}
-        className="text-sm font-semibold text-accent hover:underline disabled:opacity-60"
+        aria-label={`${activo ? "Desactivar" : "Reactivar"} a ${nombre}`}
+        className="text-sm font-semibold text-accent enabled:hover:underline disabled:opacity-60"
       >
         {activo ? "Desactivar" : "Reactivar"}
       </button>
