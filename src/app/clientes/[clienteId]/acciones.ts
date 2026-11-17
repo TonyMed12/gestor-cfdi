@@ -1,8 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  buscarAcceso, DIAS_VIGENCIA, generarContrasena, generarToken, hashContrasena, sesionValida, venció,
+} from "@/lib/enlace";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { leerCfdi } from "@/lib/cfdi";
+import { clasificar, MAX_BYTES, nombreSeguro } from "@/lib/archivos";
 import { consultarEstadoSat } from "@/lib/sat";
 import { dinero } from "@/lib/formato";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -12,8 +17,11 @@ type Lectura = { ok: boolean; texto: string };
 
 // Lee un XML ya subido: valida el CFDI y guarda la factura con sus conceptos e impuestos.
 export async function procesarXml(archivoId: string): Promise<Lectura> {
-  const supabase = await supabaseServidor();
+  return leerXml(await supabaseServidor(), archivoId);
+}
 
+// Con la sesión del contador, o con la clave de servicio en el envío por enlace (ya validado el token).
+async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lectura> {
   // Pasa de "recibido" a "leyendo"; si otro proceso ya lo tomó, no se procesa dos veces.
   const { data: archivo } = await supabase
     .from("archivo")
@@ -157,6 +165,116 @@ export async function reintentarLectura(archivoId: string): Promise<Lectura> {
     if (!data?.length) return { ok: false, texto: "El archivo cambió mientras tanto; recarga la página" };
   }
   return procesarXml(archivoId);
+}
+
+// Genera (o reemplaza) el enlace y la contraseña del cliente. Lo anterior deja de funcionar.
+// La contraseña se devuelve una sola vez: en la base solo queda su hash.
+export async function generarEnlaceEnvio(clienteId: string): Promise<{
+  token?: string;
+  contrasena?: string;
+  venceEn?: string;
+  error?: string;
+}> {
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Inicia sesión de nuevo." };
+  const { data: yo } = await supabase.from("usuario").select("rol").eq("id", user.id).maybeSingle();
+  if (!yo || !["administrador", "contador"].includes(yo.rol)) {
+    return { error: "Solo el administrador o el contador pueden generar enlaces." };
+  }
+  // RLS: solo si el cliente es de su despacho.
+  const { data: cliente } = await supabase.from("clientes").select("id").eq("id", clienteId).maybeSingle();
+  if (!cliente) return { error: "No se encontró el cliente." };
+
+  const token = generarToken();
+  const contrasena = generarContrasena();
+  const venceEn = new Date(Date.now() + DIAS_VIGENCIA * 86_400_000).toISOString();
+  const { error } = await supabaseAdmin().from("enlace_acceso").upsert(
+    {
+      cliente_id: clienteId,
+      token,
+      password_hash: hashContrasena(contrasena),
+      vence_en: venceEn,
+      intentos_fallidos: 0,
+      bloqueado_hasta: null,
+    },
+    { onConflict: "cliente_id" },
+  );
+  if (error) return { error: "No se pudo generar el enlace." };
+
+  revalidatePath(`/clientes/${clienteId}`);
+  return { token, contrasena, venceEn };
+}
+
+export type ResultadoEnvio = { nombre: string; texto: string; bien: boolean };
+
+// Envío por enlace (RF-04): el cliente sube XML sin cuenta. Solo el token identifica al cliente.
+// Acepta solo XML: los PDF y escaneos siguen por la carga del contador (RF-13 a RF-18).
+export async function subirXmlPorEnlace(
+  token: string,
+  formData: FormData,
+): Promise<{ resultados: ResultadoEnvio[]; error?: string }> {
+  if (!/^[a-f0-9]{48}$/.test(token)) return { resultados: [], error: "Este enlace no es válido." };
+  const acceso = await buscarAcceso(token);
+  if (!acceso) return { resultados: [], error: "Este enlace no es válido o ya fue reemplazado." };
+  if (venció(acceso)) return { resultados: [], error: "Este enlace venció. Pide uno nuevo a tu contador." };
+  // La contraseña se comprobó al abrir la página; la sesión firmada demuestra que se hizo.
+  if (!(await sesionValida(token))) return { resultados: [], error: "Escribe la contraseña para continuar." };
+  const admin = supabaseAdmin();
+  const cliente = { id: acceso.cliente_id };
+
+  const archivos = formData.getAll("archivos").filter((x): x is File => x instanceof File).slice(0, 20);
+  if (archivos.length === 0) return { resultados: [], error: "Elige al menos un archivo XML." };
+
+  const resultados: ResultadoEnvio[] = [];
+  for (const f of archivos) {
+    const nombre = f.name;
+    if (f.size > MAX_BYTES) {
+      resultados.push({ nombre, texto: "Pasa de 20 MB", bien: false });
+      continue;
+    }
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    const clase = clasificar(nombre, bytes);
+    if ("error" in clase || clase.tipo !== "xml") {
+      resultados.push({ nombre, texto: "Solo se aceptan XML de factura", bien: false });
+      continue;
+    }
+
+    // Mismo contenido ya guardado para este cliente: no se vuelve a sumar (RF-05).
+    const huella = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) =>
+      b.toString(16).padStart(2, "0"),
+    ).join("");
+    const { data: repetido } = await admin
+      .from("archivo").select("id")
+      .eq("cliente_id", cliente.id).eq("huella_sha256", huella).neq("estado", "error")
+      .maybeSingle();
+    if (repetido) {
+      resultados.push({ nombre, texto: "Ya la tenemos: esta factura ya está en el repositorio", bien: false });
+      continue;
+    }
+
+    const id = crypto.randomUUID();
+    const ruta = `${cliente.id}/${id}/${nombreSeguro(nombre)}`;
+    const { error: errorFila } = await admin.from("archivo").insert({
+      id, cliente_id: cliente.id, tipo: "xml", huella_sha256: huella, ruta_original: ruta, origen: "enlace",
+    });
+    if (errorFila) {
+      resultados.push({ nombre, texto: "No se pudo registrar el archivo", bien: false });
+      continue;
+    }
+    const { error: errorSubida } = await admin.storage.from("facturas").upload(
+      ruta, new Blob([bytes as BlobPart], { type: clase.mime }), { contentType: clase.mime },
+    );
+    if (errorSubida) {
+      await admin.from("archivo").update({ estado: "error", motivo_error: "No se pudo subir el archivo" }).eq("id", id);
+      resultados.push({ nombre, texto: "No se pudo subir; vuelve a intentarlo", bien: false });
+      continue;
+    }
+
+    const lectura = await leerXml(admin, id);
+    resultados.push({ nombre, texto: lectura.texto, bien: lectura.ok });
+  }
+  return { resultados };
 }
 
 // Enlace que vence en 60 segundos para abrir un archivo privado.

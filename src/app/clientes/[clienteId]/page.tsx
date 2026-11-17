@@ -4,8 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
-import { getArchivos, getCliente } from "@/lib/datos";
+import { getArchivos, getCliente, getEnlaceEnvio, getPerfil } from "@/lib/datos";
 import { dinero } from "@/lib/formato";
+import { EnlaceEnvio } from "./EnlaceEnvio";
 import { ReintentarLectura } from "./ReintentarLectura";
 import { SubirArchivos } from "./SubirArchivos";
 import { VerArchivo } from "./VerArchivo";
@@ -39,6 +40,10 @@ export default async function ClienteDetallePage({
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   const archivos = await getArchivos(clienteId);
+  const perfil = await getPerfil();
+  const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
+  // El token solo se entrega a quien puede regenerarlo; auxiliares no lo ven.
+  const enlace = puedeEditar ? await getEnlaceEnvio(cliente.id) : null;
 
   return (
     <AppShell active="/clientes">
@@ -53,6 +58,8 @@ export default async function ClienteDetallePage({
       </header>
 
       <SubirArchivos clienteId={cliente.id} />
+
+      {puedeEditar && <EnlaceEnvio clienteId={cliente.id} enlaceInicial={enlace} />}
 
       <section className="flex flex-col rounded-xl border border-border bg-surface">
         <div className="border-b border-border px-5 py-4.5">

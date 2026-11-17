@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // El envío por enlace sube hasta 20 XML en una sola acción; el límite por defecto (1 MB) es menor.
+  experimental: { serverActions: { bodySizeLimit: "25mb" } },
   // Cabeceras básicas de seguridad para todas las rutas. La política de contenido (CSP) se define al desplegar.
   async headers() {
     return [

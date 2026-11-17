@@ -2,15 +2,22 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { NOMBRE_APP } from "@/lib/config";
-import { getFacturasPorRevisar, getPeriodoActual } from "@/lib/mock-data";
+import { getFacturasPorRevisar } from "@/lib/datos";
+import { getPeriodoActual } from "@/lib/mock-data";
 
 export const metadata = { title: `Bandeja de revisión · ${NOMBRE_APP}` };
 
-export default function BandejaPage() {
-  const facturas = getFacturasPorRevisar();
+const etiquetaSat = {
+  vigente: <Badge variant="success">Vigente</Badge>,
+  cancelada: <Badge variant="warn">Cancelada</Badge>,
+  no_encontrada: <Badge>No encontrada</Badge>,
+} as const;
+
+export default async function BandejaPage() {
+  const facturas = await getFacturasPorRevisar();
   const porIa = facturas.filter((f) => f.origenClasificacion === "ia").length;
   const porRegla = facturas.filter(
-    (f) => f.origenClasificacion === "regla",
+    (f) => f.origenClasificacion === "regla" || f.origenClasificacion === "emisor",
   ).length;
 
   return (
@@ -128,7 +135,7 @@ export default function BandejaPage() {
                   ${f.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-3 py-3.5">
-                  <Badge variant="success">Vigente</Badge>
+                  {etiquetaSat[f.estadoSat]}
                 </td>
                 <td className="px-3 py-3.5">{f.categoriaPropuesta}</td>
                 <td className="px-3 py-3.5">
@@ -136,10 +143,20 @@ export default function BandejaPage() {
                     <span className="text-[13px] font-semibold text-sat-soft-text">
                       IA · {f.sugerencia?.confianza}%
                     </span>
-                  ) : (
+                  ) : f.origenClasificacion === "emisor" ? (
                     <span className="text-[13px] text-[#374151]">
-                      Regla del contador
+                      Regla por emisor
                     </span>
+                  ) : f.origenClasificacion === "regla" ? (
+                    <span className="text-[13px] text-[#374151]">
+                      Clave asignada a mano
+                    </span>
+                  ) : f.origenClasificacion === "division" ? (
+                    <span className="text-[13px] text-[#374151]">
+                      Clave del SAT (sugerida)
+                    </span>
+                  ) : (
+                    <span className="text-[13px] text-text-muted">Sin origen</span>
                   )}
                 </td>
                 <td className="px-5 py-2.5 text-right">
@@ -165,8 +182,8 @@ export default function BandejaPage() {
         )}
       </section>
       <p className="m-0 text-sm text-text-muted">
-        Primero se aplican tus reglas; la IA solo propone cuando ninguna
-        regla aplica.
+        Cada concepto se clasifica en este orden: clave asignada a mano,
+        regla por emisor y, por último, sugerencia de la clave del SAT.
       </p>
     </AppShell>
   );

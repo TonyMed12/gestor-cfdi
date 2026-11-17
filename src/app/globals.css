@@ -40,11 +40,14 @@ body {
   font-family: var(--font-sans);
 }
 
-a {
-  color: var(--color-accent-soft-text);
-}
-a:hover {
-  color: var(--color-accent-hover);
+/* Dentro de @layer base para que las clases de utilidad (text-white en los botones) ganen. */
+@layer base {
+  a {
+    color: var(--color-accent-soft-text);
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
 }
 
 /* Tailwind 4 ya no pone cursor de mano en los botones: se define aquí para toda la app. */

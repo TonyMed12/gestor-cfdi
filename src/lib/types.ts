@@ -15,7 +15,8 @@ export type EstadoRevision =
   | "clasificado"
   | "excluido";
 
-export type OrigenClasificacion = "ia" | "regla";
+// "emisor": regla del contador por RFC. "regla": clave asignada a mano. "division": sugerencia por división del SAT.
+export type OrigenClasificacion = "ia" | "emisor" | "regla" | "division";
 
 export interface Cliente {
   id: string;
@@ -40,6 +41,8 @@ export interface Concepto {
   cantidad: number;
   importe: number;
   impuestos: Impuesto[];
+  categoria?: string; // se calcula al leer, según la prioridad de datos.ts
+  origen?: OrigenClasificacion;
 }
 
 export interface Sugerencia {
@@ -65,8 +68,8 @@ export interface Factura {
   receptorNombre: string;
   receptorRfc: string;
   usoCfdi: string;
-  formaPago: string;
-  metodoPago: "PUE" | "PPD";
+  formaPago: string | null;
+  metodoPago: "PUE" | "PPD" | null;
   moneda: string;
   subtotal: number;
   total: number;
@@ -79,7 +82,7 @@ export interface Factura {
   prioridad: "alta" | "normal";
   motivoPrioridad?: string;
   categoriaPropuesta: string;
-  origenClasificacion: OrigenClasificacion;
+  origenClasificacion?: OrigenClasificacion; // aún no se guarda en la base (S3-05)
   conceptos: Concepto[];
   sugerencia?: Sugerencia;
   emisorNuevo?: boolean;

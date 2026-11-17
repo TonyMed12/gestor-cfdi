@@ -4,7 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { getTotalPorRevisar } from "@/lib/mock-data";
-import type { Factura } from "@/lib/types";
+import type { Factura, OrigenClasificacion } from "@/lib/types";
+
+const etiquetaOrigen: Record<OrigenClasificacion, string> = {
+  regla: "Clave asignada a mano",
+  emisor: "Regla por emisor",
+  division: "Sugerida por la clave del SAT",
+  ia: "Sugerencia de IA",
+};
 
 export function RevisionClient({ factura }: { factura: Factura }) {
   const [decision, setDecision] = useState<
@@ -90,7 +97,7 @@ export function RevisionClient({ factura }: { factura: Factura }) {
               </Dato>
               <Dato label="Forma y método de pago">
                 <span>
-                  {factura.formaPago} · {factura.metodoPago}
+                  {factura.formaPago ?? "—"} · {factura.metodoPago ?? "—"}
                 </span>
               </Dato>
               <Dato label="Moneda">
@@ -104,6 +111,7 @@ export function RevisionClient({ factura }: { factura: Factura }) {
                   <tr className="bg-[#F8FAFB] text-left text-[13px] text-text-muted">
                     <th className="px-3 py-2.5 font-semibold">Clave SAT</th>
                     <th className="px-3 py-2.5 font-semibold">Concepto</th>
+                    <th className="px-3 py-2.5 font-semibold">Categoría</th>
                     <th className="px-3 py-2.5 text-right font-semibold">
                       Cant.
                     </th>
@@ -122,6 +130,18 @@ export function RevisionClient({ factura }: { factura: Factura }) {
                         {c.claveProdServ}
                       </td>
                       <td className="px-3 py-2.5">{c.descripcion}</td>
+                      <td className="px-3 py-2.5">
+                        {c.categoria ? (
+                          <>
+                            <span className="font-semibold">{c.categoria}</span>
+                            <span className="block text-[13px] text-text-muted">
+                              {etiquetaOrigen[c.origen ?? "division"]}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-text-muted">Sin clasificar</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-right">
                         {c.cantidad}
                       </td>

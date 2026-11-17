@@ -25,6 +25,8 @@ export async function proxy(request: NextRequest) {
   // getUser() valida la sesión con Supabase en lugar de confiar solo en la cookie.
   const { data: { user } } = await supabase.auth.getUser();
   const enLogin = request.nextUrl.pathname === "/login";
+  // El enlace de envío del cliente no pide cuenta; su token es lo que lo protege.
+  const esEnlaceCliente = request.nextUrl.pathname.startsWith("/enviar/");
 
   // Al redirigir se copian las cookies que Supabase acaba de renovar; si se pierden, el navegador
   // conserva un token ya rotado y la sesión puede cerrarse en la siguiente renovación.
@@ -34,7 +36,7 @@ export async function proxy(request: NextRequest) {
     return redireccion;
   };
 
-  if (!user && !enLogin) return redirigir("/login");
+  if (!user && !enLogin && !esEnlaceCliente) return redirigir("/login");
   if (user && enLogin) return redirigir("/dashboard");
   return response;
 }

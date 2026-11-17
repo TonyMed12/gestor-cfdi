@@ -1,5 +1,7 @@
-import type { Cliente } from "./types";
+import type { Cliente, Concepto, Factura, Impuesto } from "./types";
 import { supabaseServidor } from "./supabase-servidor";
+import { supabaseAdmin } from "./supabase-admin";
+import { categoriaSugeridaDeClave } from "./categorias-por-defecto";
 
 type FilaCliente = {
   id: string;
@@ -174,4 +176,249 @@ export async function getCliente(id: string): Promise<Cliente | undefined> {
     .eq("id", id)
     .maybeSingle();
   return data ? aCliente(data) : undefined;
+}
+
+// Facturas leídas de la base, con sus conceptos e impuestos (RLS limita a tu despacho).
+const SELECCION_FACTURA =
+  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, emitido_en, timbrado_en, concepto(clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, impuesto(tipo, impuesto, tasa, importe))";
+
+type FilaFacturaCompleta = {
+  id: string;
+  cliente_id: string;
+  uuid_fiscal: string;
+  tipo_comprobante: string;
+  relacion: string;
+  rfc_emisor: string;
+  nombre_emisor: string | null;
+  rfc_receptor: string;
+  nombre_receptor: string | null;
+  uso_cfdi: string;
+  forma_pago: string | null;
+  metodo_pago: string | null;
+  subtotal: string;
+  total: string;
+  moneda: string;
+  estado_sat: string;
+  fecha_consulta_sat: string;
+  estado_revision: string;
+  motivo_exclusion: string | null;
+  emitido_en: string;
+  timbrado_en: string;
+  concepto: {
+    clave_prod_serv: string;
+    descripcion: string;
+    cantidad: string;
+    importe: string;
+    objeto_impuesto: string | null;
+    impuesto: { tipo: string; impuesto: string; tasa: string; importe: string }[];
+  }[];
+};
+
+// shortcut: prioridad fija en "normal" y sin sugerencia de IA; se llenan con S3-05 y S3-06.
+const aFactura = (f: FilaFacturaCompleta): Factura => ({
+  id: f.id,
+  clienteId: f.cliente_id,
+  uuidFiscal: f.uuid_fiscal,
+  tipoComprobante: f.tipo_comprobante as Factura["tipoComprobante"],
+  relacion: f.relacion as Factura["relacion"],
+  emisorNombre: f.nombre_emisor ?? f.rfc_emisor,
+  emisorRfc: f.rfc_emisor,
+  receptorNombre: f.nombre_receptor ?? f.rfc_receptor,
+  receptorRfc: f.rfc_receptor,
+  usoCfdi: f.uso_cfdi,
+  formaPago: f.forma_pago,
+  metodoPago: f.metodo_pago as Factura["metodoPago"],
+  moneda: f.moneda,
+  subtotal: Number(f.subtotal),
+  total: Number(f.total),
+  fechaEmision: f.emitido_en,
+  fechaTimbrado: f.timbrado_en,
+  fechaConsultaSat: f.fecha_consulta_sat,
+  estadoSat: f.estado_sat as Factura["estadoSat"],
+  estadoRevision: f.estado_revision as Factura["estadoRevision"],
+  motivoExclusion: f.motivo_exclusion ?? undefined,
+  prioridad: "normal",
+  categoriaPropuesta: "Sin clasificar",
+  conceptos: f.concepto.map(
+    (c): Concepto => ({
+      claveProdServ: c.clave_prod_serv,
+      descripcion: c.descripcion,
+      cantidad: Number(c.cantidad),
+      importe: Number(c.importe),
+      impuestos: c.impuesto.map(
+        (i): Impuesto => ({
+          tipo: i.tipo as Impuesto["tipo"],
+          impuesto: i.impuesto as Impuesto["impuesto"],
+          tasa: Number(i.tasa),
+          importe: Number(i.importe),
+        }),
+      ),
+    }),
+  ),
+});
+
+export async function getFacturasPorRevisar(): Promise<Factura[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("factura")
+    .select(SELECCION_FACTURA)
+    .eq("estado_revision", "por_revisar")
+    .order("emitido_en", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer las facturas: ${error.message}`);
+  const [porClave, porEmisor] = await Promise.all([mapaClaveCategoria(), mapaReglasEmisor()]);
+  return (data as unknown as FilaFacturaCompleta[]).map((f) =>
+    conCategoria(aFactura(f), porClave, porEmisor),
+  );
+}
+
+// Clave → nombre de la categoría que el contador asignó en este despacho.
+async function mapaClaveCategoria(): Promise<Map<string, string>> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.from("clave_categoria").select("clave, categoria(nombre)");
+  if (error) throw new Error(`No se pudo leer el mapeo de claves: ${error.message}`);
+  return new Map(
+    data.map((m) => [m.clave as string, (m.categoria as unknown as { nombre: string }).nombre]),
+  );
+}
+
+// RFC → nombre de la categoría de la regla por emisor de este despacho.
+async function mapaReglasEmisor(): Promise<Map<string, string>> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.from("regla_emisor").select("rfc, categoria(nombre)");
+  if (error) throw new Error(`No se pudieron leer las reglas por emisor: ${error.message}`);
+  return new Map(
+    data.map((r) => [r.rfc as string, (r.categoria as unknown as { nombre: string }).nombre]),
+  );
+}
+
+// Cada concepto se clasifica solo, en este orden:
+// 1) clave asignada a mano · 2) regla por emisor · 3) sugerencia por división del SAT · 4) sin clasificar.
+function conCategoria(
+  factura: Factura,
+  porClave: Map<string, string>,
+  porEmisor: Map<string, string>,
+): Factura {
+  // En recibidas el emisor es el proveedor; en emitidas, el cliente que recibe la factura.
+  const contraparte = factura.relacion === "recibida" ? factura.emisorRfc : factura.receptorRfc;
+  const deEmisor = porEmisor.get(contraparte);
+
+  factura.conceptos = factura.conceptos.map((c): Concepto => {
+    const manual = porClave.get(c.claveProdServ);
+    if (manual) return { ...c, categoria: manual, origen: "regla" };
+    if (deEmisor) return { ...c, categoria: deEmisor, origen: "emisor" };
+    const sugerida = categoriaSugeridaDeClave(c.claveProdServ);
+    if (sugerida) return { ...c, categoria: sugerida, origen: "division" };
+    return { ...c, categoria: undefined, origen: undefined };
+  });
+
+  const sinCategoria = factura.conceptos.filter((c) => !c.categoria).length;
+  const nombres = new Set(factura.conceptos.flatMap((c) => (c.categoria ? [c.categoria] : [])));
+  factura.categoriaPropuesta =
+    nombres.size === 0
+      ? "Sin clasificar"
+      : sinCategoria > 0
+        ? `Faltan ${sinCategoria} de ${factura.conceptos.length} conceptos`
+        : nombres.size === 1
+          ? [...nombres][0]
+          : "Varias categorías";
+
+  const origenes = new Set(factura.conceptos.map((c) => c.origen));
+  factura.origenClasificacion = origenes.has("regla")
+    ? "regla"
+    : origenes.has("emisor")
+      ? "emisor"
+      : origenes.has("division")
+        ? "division"
+        : undefined;
+  return factura;
+}
+
+export type ReglaEmisor = { rfc: string; categoriaId: string; categoria: string };
+
+// Reglas por emisor del despacho, para la pantalla de reglas.
+export async function getReglasEmisor(): Promise<ReglaEmisor[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("regla_emisor")
+    .select("rfc, categoria_id, categoria(nombre)")
+    .order("rfc");
+  if (error) throw new Error(`No se pudieron leer las reglas por emisor: ${error.message}`);
+  return data.map((r) => ({
+    rfc: r.rfc,
+    categoriaId: r.categoria_id,
+    categoria: (r.categoria as unknown as { nombre: string }).nombre,
+  }));
+}
+
+export async function getFacturaPorId(id: string): Promise<Factura | undefined> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("factura")
+    .select(SELECCION_FACTURA)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer la factura: ${error.message}`);
+  if (!data) return undefined;
+  const [porClave, porEmisor] = await Promise.all([mapaClaveCategoria(), mapaReglasEmisor()]);
+  return conCategoria(aFactura(data as unknown as FilaFacturaCompleta), porClave, porEmisor);
+}
+
+export type Categoria = { id: string; nombre: string; deducibleDefault: boolean };
+
+// Categorías del despacho (no las de un cliente en particular).
+export async function getCategorias(): Promise<Categoria[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("categoria")
+    .select("id, nombre, deducible_default")
+    .is("cliente_id", null)
+    .order("nombre");
+  if (error) throw new Error(`No se pudieron leer las categorías: ${error.message}`);
+  return data.map((c) => ({ id: c.id, nombre: c.nombre, deducibleDefault: c.deducible_default }));
+}
+
+// porDefecto: la categoría viene de la sugerencia por división y el contador aún no la eligió.
+export type ClaveEnUso = {
+  clave: string;
+  descripcion: string;
+  categoriaId: string | null;
+  porDefecto: boolean;
+};
+
+// Solo las claves que aparecen en facturas del despacho, no las 52 mil del catálogo.
+export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
+  const supabase = await supabaseServidor();
+  const { data: usadas, error } = await supabase.from("claves_en_uso").select("clave").order("clave");
+  if (error) throw new Error(`No se pudieron leer las claves: ${error.message}`);
+  const claves = usadas.map((u) => u.clave as string);
+  if (claves.length === 0) return [];
+
+  const [catalogo, mapeo] = await Promise.all([
+    supabase.from("cat_clave_prod_serv").select("clave, descripcion").in("clave", claves),
+    supabase.from("clave_categoria").select("clave, categoria_id").in("clave", claves),
+  ]);
+  if (catalogo.error || mapeo.error) throw new Error("No se pudo leer el mapeo de claves");
+
+  const descripciones = new Map(catalogo.data.map((c) => [c.clave, c.descripcion]));
+  const asignadas = new Map(mapeo.data.map((m) => [m.clave, m.categoria_id]));
+  const idPorNombre = new Map((await getCategorias()).map((c) => [c.nombre, c.id]));
+  return claves.map((clave) => {
+    const asignada = asignadas.get(clave) ?? null;
+    const sugerida = categoriaSugeridaDeClave(clave);
+    const sugeridaId = sugerida ? (idPorNombre.get(sugerida) ?? null) : null;
+    return {
+      clave,
+      descripcion: descripciones.get(clave) ?? "Clave no encontrada en el catálogo",
+      categoriaId: asignada ?? sugeridaId,
+      porDefecto: asignada === null && sugeridaId !== null,
+    };
+  });
+}
+
+// Enlace vigente del cliente (RF-04). Solo llamar para administrador y contador: la contraseña no se guarda
+// en claro, así que aquí solo se devuelve el token y la fecha de vencimiento.
+export async function getEnlaceEnvio(clienteId: string): Promise<{ token: string; venceEn: string } | null> {
+  const { data } = await supabaseAdmin()
+    .from("enlace_acceso").select("token, vence_en").eq("cliente_id", clienteId).maybeSingle();
+  return data ? { token: data.token, venceEn: data.vence_en } : null;
 }
