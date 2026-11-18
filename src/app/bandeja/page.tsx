@@ -13,8 +13,20 @@ const etiquetaSat = {
   no_encontrada: <Badge>No encontrada</Badge>,
 } as const;
 
-export default async function BandejaPage() {
-  const facturas = await getFacturasPorRevisar();
+const TIPOS = [
+  { codigo: "", etiqueta: "Todos los tipos" },
+  { codigo: "I", etiqueta: "Ingreso" },
+  { codigo: "E", etiqueta: "Egreso" },
+  { codigo: "T", etiqueta: "Traslado" },
+  { codigo: "P", etiqueta: "Pago" },
+  { codigo: "N", etiqueta: "Nómina" },
+];
+
+export default async function BandejaPage({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
+  const { tipo } = await searchParams;
+  const tipoActivo = TIPOS.some((t) => t.codigo === tipo) ? (tipo ?? "") : "";
+  const todas = await getFacturasPorRevisar();
+  const facturas = tipoActivo ? todas.filter((f) => f.tipoComprobante === tipoActivo) : todas;
   const porIa = facturas.filter((f) => f.origenClasificacion === "ia").length;
   const porRegla = facturas.filter(
     (f) => f.origenClasificacion === "regla" || f.origenClasificacion === "emisor",
@@ -32,6 +44,21 @@ export default async function BandejaPage() {
           por prioridad.
         </p>
       </header>
+
+      <nav aria-label="Filtrar por tipo de comprobante" className="flex flex-wrap gap-2">
+        {TIPOS.map((t) => (
+          <Link
+            key={t.codigo || "todos"}
+            href={t.codigo ? `/bandeja?tipo=${t.codigo}` : "/bandeja"}
+            aria-current={t.codigo === tipoActivo ? "page" : undefined}
+            className={`h-9 inline-flex items-center rounded-full border px-3 text-sm no-underline ${
+              t.codigo === tipoActivo ? "border-accent bg-accent font-semibold text-white" : "border-[#C9D1DA] bg-surface"
+            }`}
+          >
+            {t.etiqueta}
+          </Link>
+        ))}
+      </nav>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div

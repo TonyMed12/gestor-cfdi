@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
-import { getTotalPorRevisar } from "@/lib/mock-data";
 import type { Factura, OrigenClasificacion } from "@/lib/types";
+import { aprobarFactura, rechazarFactura } from "./acciones";
 
 const etiquetaOrigen: Record<OrigenClasificacion, string> = {
   regla: "Clave asignada a mano",
@@ -13,13 +14,51 @@ const etiquetaOrigen: Record<OrigenClasificacion, string> = {
   ia: "Sugerencia de IA",
 };
 
-export function RevisionClient({ factura }: { factura: Factura }) {
-  const [decision, setDecision] = useState<
-    "pendiente" | "aceptada" | "corregida" | "rechazada"
-  >("pendiente");
-  const pendientesIniciales = getTotalPorRevisar();
-  const pendientes =
-    decision === "pendiente" ? pendientesIniciales : pendientesIniciales - 1;
+type Categoria = { id: string; nombre: string };
+type Modo = "vista" | "corregir" | "rechazar";
+
+type CambioCategoria = { categoria_anterior: string | null; categoria_nueva: string; cambiado_en: string };
+
+export function RevisionClient({ factura, categorias, historial }: {
+  factura: Factura;
+  categorias: Categoria[];
+  historial: CambioCategoria[];
+}) {
+  const router = useRouter();
+  const [modo, setModo] = useState<Modo>("vista");
+  // conceptoId → categoriaId, solo para los conceptos que el contador cambia.
+  const [corregidas, setCorregidas] = useState<Record<string, string>>({});
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const aprobada = factura.estadoRevision === "clasificado";
+  const rechazada = factura.estadoRevision === "excluido";
+  const idPorNombre = new Map(categorias.map((c) => [c.nombre, c.id]));
+  const sinClasificar = factura.conceptos.some((c) => !c.categoria);
+
+  const valorCategoria = (conceptoId: string | undefined, categoria: string | undefined) =>
+    (conceptoId && corregidas[conceptoId]) || (categoria ? idPorNombre.get(categoria) ?? "" : "");
+
+  async function aprobar() {
+    setError("");
+    setEnviando(true);
+    const resultado = await aprobarFactura(factura.id, corregidas);
+    setEnviando(false);
+    if (resultado.error) return setError(resultado.error);
+    setModo("vista");
+    router.refresh();
+  }
+
+  async function rechazar() {
+    setError("");
+    setEnviando(true);
+    const resultado = await rechazarFactura(factura.id, motivo);
+    setEnviando(false);
+    if (resultado.error) return setError(resultado.error);
+    setModo("vista");
+    router.refresh();
+  }
 
   const subtotal = factura.conceptos.reduce((s, c) => s + c.importe, 0);
   const iva = factura.conceptos
@@ -42,18 +81,21 @@ export function RevisionClient({ factura }: { factura: Factura }) {
             })}
           </h1>
           <span className="text-sm text-text-muted">
-            Fuente de datos: XML del CFDI 4.0 (exacto) ·{" "}
-            <a href="#">Ver PDF vinculado</a>
+            {factura.fuente === "pdf"
+              ? "Fuente de datos: representación impresa en PDF. Confirma los datos cuando llegue el XML."
+              : "Fuente de datos: XML del CFDI 4.0 (exacto)."}
           </span>
         </div>
         <span
           className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-            decision === "aceptada"
+            aprobada
               ? "bg-accent-soft text-accent-soft-text"
-              : "bg-warn-soft text-warn-soft-text"
+              : rechazada
+                ? "bg-[#FDF0EE] text-[#B42318]"
+                : "bg-warn-soft text-warn-soft-text"
           }`}
         >
-          {decision === "aceptada" ? "Clasificado" : "Por revisar"}
+          {aprobada ? "Clasificado" : rechazada ? "Rechazada" : "Por revisar"}
         </span>
       </header>
 
@@ -95,6 +137,9 @@ export function RevisionClient({ factura }: { factura: Factura }) {
               <Dato label="Uso de CFDI">
                 <span>{factura.usoCfdi}</span>
               </Dato>
+              <Dato label="Régimen fiscal del receptor">
+                <span>{factura.regimenReceptor ?? "—"}</span>
+              </Dato>
               <Dato label="Forma y método de pago">
                 <span>
                   {factura.formaPago ?? "—"} · {factura.metodoPago ?? "—"}
@@ -125,17 +170,31 @@ export function RevisionClient({ factura }: { factura: Factura }) {
                 </thead>
                 <tbody>
                   {factura.conceptos.map((c, i) => (
-                    <tr key={i} className="border-t border-[#EEF1F4]">
+                    <tr key={c.id ?? i} className="border-t border-[#EEF1F4]">
                       <td className="px-3 py-2.5 font-mono">
                         {c.claveProdServ}
                       </td>
                       <td className="px-3 py-2.5">{c.descripcion}</td>
                       <td className="px-3 py-2.5">
-                        {c.categoria ? (
+                        {modo === "corregir" ? (
+                          <select
+                            aria-label={`Categoría de ${c.descripcion}`}
+                            value={valorCategoria(c.id, c.categoria)}
+                            onChange={(e) =>
+                              setCorregidas((prev) => ({ ...prev, [c.id ?? ""]: e.target.value }))
+                            }
+                            className="h-9 w-full rounded-lg border border-[#8A96A3] bg-surface px-2 text-sm"
+                          >
+                            <option value="">Elige una categoría</option>
+                            {categorias.map((k) => (
+                              <option key={k.id} value={k.id}>{k.nombre}</option>
+                            ))}
+                          </select>
+                        ) : c.categoria ? (
                           <>
                             <span className="font-semibold">{c.categoria}</span>
                             <span className="block text-[13px] text-text-muted">
-                              {etiquetaOrigen[c.origen ?? "division"]}
+                              {aprobada ? "Aprobada" : etiquetaOrigen[c.origen ?? "division"]}
                             </span>
                           </>
                         ) : (
@@ -221,7 +280,7 @@ export function RevisionClient({ factura }: { factura: Factura }) {
 
         <section className="box-border flex min-w-0 flex-[2_1_340px] flex-col gap-4.5 rounded-xl border border-border bg-surface p-5.5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="m-0 text-lg font-semibold">Sugerencia de IA</h2>
+            <h2 className="m-0 text-lg font-semibold">Clasificación</h2>
             {factura.sugerencia && (
               <span className="rounded-full bg-sat-soft px-2.5 py-1 text-[13px] font-semibold text-sat-soft-text">
                 Confianza {factura.sugerencia.confianza}%
@@ -229,45 +288,14 @@ export function RevisionClient({ factura }: { factura: Factura }) {
             )}
           </div>
 
-          {factura.sugerencia ? (
-            <>
-              <dl className="m-0 flex flex-col gap-3 text-[15px]">
-                <Fila label="Categoría">
-                  {factura.sugerencia.categoriaSugerida}
-                </Fila>
-                <Fila label="Deducible">
-                  {factura.sugerencia.deducible ? "Sí" : "No"}
-                </Fila>
-                <Fila label="IVA acreditable">
-                  <span className="font-mono">
-                    $
-                    {factura.sugerencia.ivaAcreditable.toLocaleString(
-                      "es-MX",
-                      { minimumFractionDigits: 2 },
-                    )}
-                  </span>
-                </Fila>
-                <Fila label="Retenciones" last>
-                  {factura.sugerencia.retenciones}
-                </Fila>
-              </dl>
-
-              <div className="flex flex-col gap-2 rounded-lg bg-[#F5F8FB] p-4">
-                <span className="text-sm font-semibold">Por qué</span>
-                <p className="m-0 text-sm leading-relaxed text-[#374151]">
-                  {factura.sugerencia.explicacion}
-                </p>
-                <span className="text-[13px] text-text-muted">
-                  Campos usados: {factura.sugerencia.camposUsados.join(", ")}
-                </span>
-              </div>
-            </>
-          ) : (
-            <p className="m-0 rounded-lg bg-[#F5F8FB] p-4 text-sm text-text-muted">
-              Esta factura ya se clasificó por una regla del contador; no
-              necesitó sugerencia de IA.
-            </p>
-          )}
+          <dl className="m-0 flex flex-col gap-3 text-[15px]">
+            <Fila label="Categoría propuesta">{factura.categoriaPropuesta}</Fila>
+            <Fila label="IVA acreditable" last>
+              <span className="font-mono">
+                ${iva.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+              </span>
+            </Fila>
+          </dl>
 
           {factura.emisorNuevo && (
             <p className="m-0 rounded-lg bg-[#FFF6E6] px-3 py-2.5 text-sm text-warn-soft-text">
@@ -276,70 +304,141 @@ export function RevisionClient({ factura }: { factura: Factura }) {
             </p>
           )}
 
-          {decision === "pendiente" ? (
+          {aprobada && (
+            <div role="status" className="flex flex-col gap-3 rounded-lg bg-accent-soft p-4">
+              <span className="text-[15px] font-semibold text-[#0B4F42]">Clasificación aprobada</span>
+              <span className="text-sm text-[#0B4F42]">Quedó registrada en la bitácora.</span>
+              <div className="flex flex-wrap gap-2.5">
+                <Link
+                  href="/bandeja"
+                  className="inline-flex h-11 items-center rounded-lg border border-accent px-3.5 font-semibold text-accent-soft-text no-underline"
+                >
+                  Volver a la bandeja
+                </Link>
+                <Link
+                  href="/resumen"
+                  className="inline-flex h-11 items-center rounded-lg bg-accent px-3.5 font-semibold text-white no-underline hover:bg-accent-hover"
+                >
+                  Ver resumen del periodo
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {rechazada && (
+            <div role="status" className="flex flex-col gap-3 rounded-lg bg-[#FDF0EE] p-4">
+              <span className="text-[15px] font-semibold text-[#B42318]">Factura rechazada</span>
+              <span className="text-sm text-[#B42318]">Motivo: {factura.motivoExclusion}</span>
+              <Link href="/bandeja" className="font-semibold text-accent-soft-text">Volver a la bandeja</Link>
+            </div>
+          )}
+
+          {!aprobada && !rechazada && modo === "vista" && (
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
-                onClick={() => setDecision("aceptada")}
-                className="h-12 rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover"
+                onClick={aprobar}
+                disabled={sinClasificar || enviando}
+                className="h-12 rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
               >
-                Aceptar sugerencia
+                Aprobar clasificación
               </button>
+              {sinClasificar && (
+                <p className="m-0 text-sm text-text-muted">
+                  Hay conceptos sin categoría. Corrígelos para poder aprobar.
+                </p>
+              )}
               <div className="flex gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setDecision("corregida")}
+                  onClick={() => setModo("corregir")}
                   className="h-11 flex-1 rounded-lg border border-[#C9D1DA] bg-surface text-[15px] font-semibold"
                 >
                   Corregir
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDecision("rechazada")}
+                  onClick={() => setModo("rechazar")}
                   className="h-11 flex-1 rounded-lg border border-[#C9D1DA] bg-surface text-[15px] font-semibold"
                 >
                   Rechazar
                 </button>
               </div>
             </div>
-          ) : (
-            <div
-              role="status"
-              className="flex flex-col gap-3 rounded-lg bg-accent-soft p-4"
-            >
-              <span className="text-[15px] font-semibold text-[#0B4F42]">
-                {decision === "aceptada" && "Clasificación aprobada"}
-                {decision === "corregida" &&
-                  "Corrección guardada (pendiente de completar con la nueva categoría)"}
-                {decision === "rechazada" && "Sugerencia rechazada"}
-              </span>
-              <span className="text-sm text-[#0B4F42]">
-                {USUARIO_NOMBRE} ·{" "}
-                {new Date().toLocaleString("es-MX", {
-                  dateStyle: "long",
-                  timeStyle: "short",
-                })}
-                . Quedó en la bitácora
-                {decision === "aceptada" &&
-                  " y la factura pasa a «Clasificado»."}
-                {decision !== "aceptada" && "."}
-              </span>
-              <div className="flex flex-wrap gap-2.5">
-                <Link
-                  href="/bandeja"
-                  className="inline-flex h-11 items-center rounded-lg border border-accent px-3.5 font-semibold text-accent-soft-text no-underline"
-                >
-                  Siguiente factura ({pendientes} restantes)
-                </Link>
-                {decision === "aceptada" && (
-                  <Link
-                    href="/resumen"
-                    className="inline-flex h-11 items-center rounded-lg bg-accent px-3.5 font-semibold text-white no-underline hover:bg-accent-hover"
-                  >
-                    Ver resumen del periodo
-                  </Link>
-                )}
-              </div>
+          )}
+
+          {!aprobada && !rechazada && modo === "corregir" && (
+            <div className="flex flex-col gap-2.5">
+              <p className="m-0 text-sm text-text-muted">
+                Cambia la categoría de cada concepto si no es la correcta. Al aprobar, queda fija.
+              </p>
+              <button
+                type="button"
+                onClick={aprobar}
+                disabled={enviando}
+                className="h-12 rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+              >
+                {enviando ? "Guardando…" : Object.keys(corregidas).length > 0 ? "Guardar corrección y aprobar" : "Aprobar"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setModo("vista"); setCorregidas({}); setError(""); }}
+                className="h-11 rounded-lg border border-[#C9D1DA] bg-surface text-[15px] font-semibold"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {!aprobada && !rechazada && modo === "rechazar" && (
+            <div className="flex flex-col gap-2.5">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                Motivo del rechazo
+                <textarea
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  maxLength={200}
+                  rows={3}
+                  className="rounded-lg border border-[#8A96A3] bg-surface px-3 py-2 text-[15px] font-normal"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={rechazar}
+                disabled={enviando}
+                className="h-12 rounded-lg bg-[#B42318] text-base font-semibold text-white disabled:opacity-60"
+              >
+                {enviando ? "Guardando…" : "Confirmar rechazo"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setModo("vista"); setError(""); }}
+                className="h-11 rounded-lg border border-[#C9D1DA] bg-surface text-[15px] font-semibold"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <p role="alert" className="m-0 rounded-lg border border-[#F3C2BD] bg-[#FDF0EE] px-3.5 py-2.5 text-sm text-[#B42318]">
+              {error}
+            </p>
+          )}
+
+          {historial.length > 0 && (
+            <div className="flex flex-col gap-2 border-t border-[#EEF1F4] pt-4">
+              <span className="text-sm font-semibold">Cambios de categoría</span>
+              <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
+                {historial.map((h, i) => (
+                  <li key={i} className="flex flex-col">
+                    <span>{h.categoria_anterior ?? "Sin categoría"} → {h.categoria_nueva}</span>
+                    <span className="text-text-muted">
+                      {new Date(h.cambiado_en).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </section>
@@ -347,8 +446,6 @@ export function RevisionClient({ factura }: { factura: Factura }) {
     </AppShell>
   );
 }
-
-const USUARIO_NOMBRE = "Usuario";
 
 function Dato({ label, children }: { label: string; children: React.ReactNode }) {
   return (

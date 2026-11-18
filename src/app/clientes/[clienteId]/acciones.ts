@@ -6,12 +6,15 @@ import {
 } from "@/lib/enlace";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
-import { leerCfdi } from "@/lib/cfdi";
-import { clasificar, MAX_BYTES, nombreSeguro } from "@/lib/archivos";
+import { leerCfdi, type CfdiLeido } from "@/lib/cfdi";
+import { leerTextoPdf, selloEn } from "@/lib/pdf";
+import { clasificar, MAX_BYTES, nombreSeguro, type Clasificado } from "@/lib/archivos";
 import { consultarEstadoSat } from "@/lib/sat";
 import { dinero } from "@/lib/formato";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { supabaseServidor } from "@/lib/supabase-servidor";
+import { registrarAccion } from "@/lib/bitacora";
+import { rfcsEn } from "@/lib/texto-fiscal";
 
 type Lectura = { ok: boolean; texto: string };
 
@@ -21,6 +24,69 @@ export async function procesarXml(archivoId: string): Promise<Lectura> {
 }
 
 // Con la sesión del contador, o con la clave de servicio en el envío por enlace (ya validado el token).
+// Historial del archivo (RF-06): cada cambio de estado queda con su hora y su motivo.
+async function registrarHistorial(archivoId: string, estado: string, motivo?: string) {
+  await supabaseAdmin().from("archivo_historial").insert({ archivo_id: archivoId, estado, motivo: motivo ?? null });
+}
+
+// Si la factura del cliente con ese UUID se leyó desde PDF, la quita para que entre el XML. Devuelve true si la quitó.
+async function reemplazarSiEsPdf(clienteId: string, uuid: string): Promise<boolean> {
+  const admin = supabaseAdmin();
+  const { data: previa } = await admin
+    .from("factura").select("id, archivo_id")
+    .eq("cliente_id", clienteId).eq("uuid_fiscal", uuid).eq("fuente", "pdf").maybeSingle();
+  if (!previa) return false;
+  await admin.from("factura").delete().eq("id", previa.id);
+  await admin.from("archivo").update({ estado: "error", motivo_error: "Reemplazado por el XML de la misma factura" })
+    .eq("id", previa.archivo_id);
+  await registrarHistorial(previa.archivo_id, "error", "Reemplazado por el XML de la misma factura");
+  return true;
+}
+
+// Guarda una factura leída de la representación impresa en PDF (RF-13). Queda marcada como lectura de PDF.
+async function guardarFacturaDePdf(
+  archivoId: string,
+  clienteId: string,
+  clienteRfc: string,
+  leido: CfdiLeido,
+): Promise<{ texto: string; bien: boolean }> {
+  const admin = supabaseAdmin();
+  const f = leido.factura;
+  const relacion = f.rfc_emisor.toUpperCase() === clienteRfc.toUpperCase() ? "emitida" : "recibida";
+  await admin.from("archivo").update({ estado: "leyendo" }).eq("id", archivoId);
+
+  // Mismo criterio que el XML: consulta al SAT con los datos del PDF y el sello impreso.
+  const sat = await consultarEstadoSat({
+    uuid: f.uuid_fiscal, rfcEmisor: f.rfc_emisor, rfcReceptor: f.rfc_receptor, total: f.total, sello: f.sello,
+  });
+  const exclusion = leido.exclusion ?? (sat === "cancelada" ? "Cancelada ante el SAT" : null);
+  const payload = {
+    p_archivo: archivoId,
+    p_factura: {
+      ...f, sello: undefined, relacion, motivo_exclusion: exclusion,
+      estado_sat: sat, fecha_consulta_sat: sat ? new Date().toISOString() : null,
+    },
+    p_conceptos: leido.conceptos,
+  };
+  let { error } = await admin.rpc("guardar_factura", payload);
+  if (error?.code === "23505" && (await reemplazarSiEsPdf(clienteId, f.uuid_fiscal))) {
+    ({ error } = await admin.rpc("guardar_factura", payload));
+  }
+  if (error) {
+    const motivo = error.code === "23505"
+      ? "Ya está en el repositorio como XML de esta factura"
+      : "No se pudo guardar la factura leída del PDF";
+    await admin.from("archivo").update({ estado: "error", motivo_error: motivo }).eq("id", archivoId);
+    await registrarHistorial(archivoId, "error", motivo);
+    return { texto: motivo, bien: false };
+  }
+  await registrarHistorial(archivoId, exclusion ? "error" : "por_revisar", exclusion ?? "Leída de PDF");
+  const estadoSat = sat ? ESTADO_SAT[sat].texto : "sin consultar";
+  return exclusion
+    ? { texto: `Leída de PDF, pero excluida: ${exclusion}`, bien: false }
+    : { texto: `Leída del PDF · SAT: ${estadoSat} · confirma los datos cuando llegue el XML`, bien: true };
+}
+
 async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lectura> {
   // Pasa de "recibido" a "leyendo"; si otro proceso ya lo tomó, no se procesa dos veces.
   const { data: archivo } = await supabase
@@ -30,9 +96,11 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
     .select("id, cliente_id, ruta_original")
     .maybeSingle();
   if (!archivo) return { ok: false, texto: "El archivo no está disponible para leerse" };
+  await registrarHistorial(archivoId, "leyendo");
 
   const fallar = async (motivo: string) => {
     await supabase.from("archivo").update({ estado: "error", motivo_error: motivo }).eq("id", archivoId);
+    await registrarHistorial(archivoId, "error", motivo);
     revalidatePath(`/clientes/${archivo.cliente_id}`);
     return { ok: false, texto: motivo };
   };
@@ -63,7 +131,7 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
 
   // El permiso ya se comprobó con la sesión del usuario al reservar el archivo (RLS).
   // La factura la guarda el servidor con la clave de servicio: nadie puede guardarla desde el navegador.
-  const { error } = await supabaseAdmin().rpc("guardar_factura", {
+  const payload = {
     p_archivo: archivoId,
     p_factura: {
       ...factura,
@@ -74,7 +142,12 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
       fecha_consulta_sat: sat ? new Date().toISOString() : null,
     },
     p_conceptos: leido.conceptos,
-  });
+  };
+  let { error } = await supabaseAdmin().rpc("guardar_factura", payload);
+  // RN-04: el XML reemplaza a una lectura previa hecha desde PDF de la misma factura.
+  if (error?.code === "23505" && (await reemplazarSiEsPdf(archivo.cliente_id, factura.uuid_fiscal))) {
+    ({ error } = await supabaseAdmin().rpc("guardar_factura", payload));
+  }
   if (error) {
     return fallar(
       error.code === "23505"
@@ -82,6 +155,31 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
         : "No se pudo guardar la factura",
     );
   }
+
+  // Datos que la función de guardado no recibe: régimen del receptor y CFDI relacionados (S2-07).
+  const admin = supabaseAdmin();
+  const { data: creada } = await admin.from("factura").select("id").eq("archivo_id", archivoId).maybeSingle();
+  if (creada) {
+    await admin.from("factura").update({ regimen_receptor: factura.regimen_receptor }).eq("id", creada.id);
+    if (factura.relacionados.length > 0) {
+      await admin.from("factura_relacion").upsert(
+        factura.relacionados.map((r) => ({ factura_id: creada.id, tipo_relacion: r.tipo_relacion, uuid_relacionado: r.uuid })),
+        { onConflict: "factura_id,tipo_relacion,uuid_relacionado" },
+      );
+      // Enlaza con las facturas del mismo cliente que ya existen, en ambos sentidos.
+      const uuids = factura.relacionados.map((r) => r.uuid);
+      const { data: existentes } = await admin
+        .from("factura").select("id, uuid_fiscal").eq("cliente_id", archivo.cliente_id).in("uuid_fiscal", uuids);
+      for (const e of existentes ?? []) {
+        await admin.from("factura_relacion").update({ factura_relacionada_id: e.id })
+          .eq("factura_id", creada.id).eq("uuid_relacionado", e.uuid_fiscal);
+      }
+    }
+    const { data: propias } = await admin.from("factura").select("id").eq("cliente_id", archivo.cliente_id);
+    await admin.from("factura_relacion").update({ factura_relacionada_id: creada.id })
+      .eq("uuid_relacionado", factura.uuid_fiscal).in("factura_id", (propias ?? []).map((p) => p.id));
+  }
+  await registrarHistorial(archivoId, exclusion ? "error" : "por_revisar", exclusion ?? undefined);
 
   revalidatePath(`/clientes/${archivo.cliente_id}`);
   if (exclusion) return { ok: false, texto: `Leída, pero excluida: ${exclusion}` };
@@ -94,16 +192,21 @@ export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; 
   const supabase = await supabaseServidor();
   const { data: factura } = await supabase
     .from("factura")
-    .select("id, cliente_id, uuid_fiscal, rfc_emisor, rfc_receptor, total, motivo_exclusion, archivo(ruta_original)")
+    .select("id, cliente_id, uuid_fiscal, rfc_emisor, rfc_receptor, total, motivo_exclusion, archivo(ruta_original, tipo)")
     .eq("archivo_id", archivoId)
     .maybeSingle();
   if (!factura) return { ok: false, texto: "Este archivo no tiene una factura leída" };
 
   // El sello está en el XML original, no en la base.
-  const ruta = (factura.archivo as unknown as { ruta_original: string }).ruta_original;
+  const { ruta_original: ruta, tipo } = factura.archivo as unknown as { ruta_original: string; tipo: string };
   const { data: descarga } = await supabase.storage.from("facturas").download(ruta);
-  const leido = descarga ? leerCfdi(await descarga.text()) : null;
-  const sello = leido && !("error" in leido) ? leido.factura.sello : null;
+  let sello: string | null = null;
+  if (descarga && tipo === "pdf") {
+    sello = selloEn(await leerTextoPdf(new Uint8Array(await descarga.arrayBuffer())));
+  } else if (descarga) {
+    const leido = leerCfdi(await descarga.text());
+    sello = "error" in leido ? null : leido.factura.sello;
+  }
 
   const sat = await consultarEstadoSat({
     uuid: factura.uuid_fiscal, rfcEmisor: factura.rfc_emisor, rfcReceptor: factura.rfc_receptor,
@@ -200,7 +303,10 @@ export async function generarEnlaceEnvio(clienteId: string): Promise<{
     },
     { onConflict: "cliente_id" },
   );
-  if (error) return { error: "No se pudo generar el enlace." };
+  if (error) {
+    console.error("generarEnlaceEnvio:", error.message);
+    return { error: "No se pudo generar el enlace. Intenta de nuevo." };
+  }
 
   revalidatePath(`/clientes/${clienteId}`);
   return { token, contrasena, venceEn };
@@ -228,6 +334,150 @@ export async function subirXmlPorEnlace(
 
   const resultados: ResultadoEnvio[] = [];
   for (const f of archivos) {
+    if (f.size > MAX_BYTES) {
+      resultados.push({ nombre: f.name, texto: "Pasa de 20 MB", bien: false });
+      continue;
+    }
+    const r = await guardarXmlDeCliente(admin, cliente.id, f.name, new Uint8Array(await f.arrayBuffer()), "enlace");
+    resultados.push({ nombre: f.name, ...r });
+  }
+  return { resultados };
+}
+
+async function huellaHex(bytes: Uint8Array): Promise<string> {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes))), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+// Guarda un archivo en el repositorio de un cliente. Devuelve el id si quedó guardado.
+async function guardarEnRepositorio(
+  admin: SupabaseClient,
+  clienteId: string,
+  nombre: string,
+  bytes: Uint8Array,
+  clase: Clasificado,
+  origen: "enlace" | "entrada",
+): Promise<{ id?: string; error?: string }> {
+  // Mismo contenido ya guardado para este cliente: no se vuelve a sumar (RF-05).
+  const huella = await huellaHex(bytes);
+  const { data: repetido } = await admin
+    .from("archivo").select("id")
+    .eq("cliente_id", clienteId).eq("huella_sha256", huella).neq("estado", "error")
+    .maybeSingle();
+  if (repetido) return { error: "Ya está en el repositorio" };
+
+  const id = crypto.randomUUID();
+  const ruta = `${clienteId}/${id}/${nombreSeguro(nombre)}`;
+  const { error: errorFila } = await admin.from("archivo").insert({
+    id, cliente_id: clienteId, tipo: clase.tipo, huella_sha256: huella, ruta_original: ruta, origen,
+  });
+  if (errorFila) return { error: "No se pudo registrar el archivo" };
+
+  const { error: errorSubida } = await admin.storage.from("facturas").upload(
+    ruta, new Blob([bytes as BlobPart], { type: clase.mime }), { contentType: clase.mime },
+  );
+  if (errorSubida) {
+    await admin.from("archivo").update({ estado: "error", motivo_error: "No se pudo subir el archivo" }).eq("id", id);
+    return { error: "No se pudo subir; vuelve a intentarlo" };
+  }
+  await registrarHistorial(id, "recibido");
+  return { id };
+}
+
+// XML: se guarda y se lee la factura. Lo usan el envío por enlace y la bandeja de entrada.
+async function guardarXmlDeCliente(
+  admin: SupabaseClient,
+  clienteId: string,
+  nombre: string,
+  bytes: Uint8Array,
+  origen: "enlace" | "entrada",
+): Promise<{ texto: string; bien: boolean }> {
+  const clase = clasificar(nombre, bytes);
+  if ("error" in clase || clase.tipo !== "xml") return { texto: "Solo se aceptan XML de factura", bien: false };
+  const r = await guardarEnRepositorio(admin, clienteId, nombre, bytes, clase, origen);
+  if (!r.id) return { texto: r.error ?? "No se pudo guardar", bien: false };
+  const lectura = await leerXml(admin, r.id);
+  return { texto: lectura.texto, bien: lectura.ok };
+}
+
+// PDF o imagen: se guarda para revisión. No crea factura: el XML es la fuente de los datos (ADR-0001).
+async function guardarDocumentoDeCliente(
+  admin: SupabaseClient,
+  clienteId: string,
+  nombre: string,
+  bytes: Uint8Array,
+  clase: Clasificado,
+): Promise<{ texto: string; bien: boolean }> {
+  const r = await guardarEnRepositorio(admin, clienteId, nombre, bytes, clase, "entrada");
+  if (!r.id) return { texto: r.error ?? "No se pudo guardar", bien: false };
+  await admin.from("archivo").update({ estado: "por_revisar" }).eq("id", r.id);
+  await registrarHistorial(r.id, "por_revisar");
+  return { texto: "Guardado para revisión", bien: true };
+}
+
+// Bandeja "sin cliente": el archivo se guarda en el despacho hasta que se asigne.
+async function guardarSinCliente(
+  admin: SupabaseClient,
+  despachoId: string,
+  nombre: string,
+  bytes: Uint8Array,
+  clase: Clasificado,
+  motivo: string,
+): Promise<{ texto: string; bien: boolean }> {
+  const huella = await huellaHex(bytes);
+  const { data: repetido } = await admin
+    .from("archivo").select("id")
+    .eq("despacho_id", despachoId).is("cliente_id", null).eq("huella_sha256", huella)
+    .maybeSingle();
+  if (repetido) return { texto: "Ya está en la bandeja de entrada", bien: false };
+
+  const id = crypto.randomUUID();
+  const ruta = `entrada/${despachoId}/${id}/${nombreSeguro(nombre)}`;
+  const { error: errorFila } = await admin.from("archivo").insert({
+    id, despacho_id: despachoId, tipo: clase.tipo, huella_sha256: huella, ruta_original: ruta,
+    origen: "entrada", estado: "error", motivo_error: motivo,
+  });
+  if (errorFila) return { texto: "No se pudo registrar el archivo", bien: false };
+
+  const { error: errorSubida } = await admin.storage.from("facturas").upload(
+    ruta, new Blob([bytes as BlobPart], { type: clase.mime }), { contentType: clase.mime },
+  );
+  if (errorSubida) {
+    await admin.from("archivo").delete().eq("id", id);
+    return { texto: "No se pudo guardar; vuelve a intentarlo", bien: false };
+  }
+  await registrarHistorial(id, "error", motivo);
+  return { texto: "Sin cliente: quedó en la bandeja de entrada", bien: false };
+}
+
+async function clientesPorRfc(admin: SupabaseClient, despachoId: string, rfcs: string[]) {
+  if (rfcs.length === 0) return [];
+  const { data } = await admin
+    .from("clientes").select("id, razon_social, rfc").eq("despacho_id", despachoId).eq("activo", true).in("rfc", rfcs);
+  return data ?? [];
+}
+
+// Bandeja de entrada (RF-01): se suben XML sin elegir cliente. Cada factura va al repositorio del emisor
+// y del receptor que sean clientes del despacho (si ambos lo son, se guarda en los dos).
+// Si ninguno lo es, queda en la bandeja "sin cliente" para asignarla después.
+export async function subirAEntrada(
+  formData: FormData,
+): Promise<{ resultados: ResultadoEnvio[]; error?: string }> {
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { resultados: [], error: "Tu sesión venció. Inicia sesión de nuevo." };
+  const { data: yo } = await supabase.from("usuario").select("despacho_id, rol").eq("id", user.id).maybeSingle();
+  if (!yo || !["administrador", "contador", "auxiliar"].includes(yo.rol)) {
+    return { resultados: [], error: "No tienes permiso para subir facturas." };
+  }
+
+  const archivos = formData.getAll("archivos").filter((x): x is File => x instanceof File).slice(0, 20);
+  if (archivos.length === 0) return { resultados: [], error: "Elige al menos un archivo XML." };
+
+  const admin = supabaseAdmin();
+  const resultados: ResultadoEnvio[] = [];
+  for (const f of archivos) {
     const nombre = f.name;
     if (f.size > MAX_BYTES) {
       resultados.push({ nombre, texto: "Pasa de 20 MB", bien: false });
@@ -235,45 +485,87 @@ export async function subirXmlPorEnlace(
     }
     const bytes = new Uint8Array(await f.arrayBuffer());
     const clase = clasificar(nombre, bytes);
-    if ("error" in clase || clase.tipo !== "xml") {
-      resultados.push({ nombre, texto: "Solo se aceptan XML de factura", bien: false });
+    if ("error" in clase) {
+      resultados.push({ nombre, texto: clase.error, bien: false });
       continue;
     }
 
-    // Mismo contenido ya guardado para este cliente: no se vuelve a sumar (RF-05).
-    const huella = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) =>
-      b.toString(16).padStart(2, "0"),
-    ).join("");
-    const { data: repetido } = await admin
-      .from("archivo").select("id")
-      .eq("cliente_id", cliente.id).eq("huella_sha256", huella).neq("estado", "error")
-      .maybeSingle();
-    if (repetido) {
-      resultados.push({ nombre, texto: "Ya la tenemos: esta factura ya está en el repositorio", bien: false });
+    if (clase.tipo === "xml") {
+      const leido = leerCfdi(new TextDecoder().decode(bytes));
+      if ("error" in leido) {
+        resultados.push({ nombre, texto: "No es una factura CFDI válida", bien: false });
+        continue;
+      }
+      const rfcs = [...new Set([leido.factura.rfc_emisor, leido.factura.rfc_receptor].map((r) => r.toUpperCase()))];
+      const clientes = await clientesPorRfc(admin, yo.despacho_id, rfcs);
+      if (clientes.length === 0) {
+        const r = await guardarSinCliente(admin, yo.despacho_id, nombre, bytes, clase,
+          `Ningún cliente tiene el RFC ${rfcs.join(" ni ")}`);
+        resultados.push({ nombre, ...r });
+        continue;
+      }
+      for (const c of clientes) {
+        const r = await guardarXmlDeCliente(admin, c.id, nombre, bytes, "entrada");
+        resultados.push({ nombre: `${nombre} → ${c.razon_social}`, ...r });
+      }
       continue;
     }
 
-    const id = crypto.randomUUID();
-    const ruta = `${cliente.id}/${id}/${nombreSeguro(nombre)}`;
-    const { error: errorFila } = await admin.from("archivo").insert({
-      id, cliente_id: cliente.id, tipo: "xml", huella_sha256: huella, ruta_original: ruta, origen: "enlace",
-    });
-    if (errorFila) {
-      resultados.push({ nombre, texto: "No se pudo registrar el archivo", bien: false });
-      continue;
+    // PDF o imagen: se lee el texto (o se hace OCR local) y se busca el RFC de algún cliente.
+    try {
+      if (clase.tipo === "pdf") {
+        const pdf = await import("@/lib/pdf");
+        const leidoPdf = pdf.leerFacturaPdf(await pdf.leerTextoPdf(bytes));
+        if (!("error" in leidoPdf)) {
+          const rfcsFactura = [leidoPdf.factura.rfc_emisor, leidoPdf.factura.rfc_receptor].map((r) => r.toUpperCase());
+          const clientesFactura = await clientesPorRfc(admin, yo.despacho_id, rfcsFactura);
+          if (clientesFactura.length === 0) {
+            const r = await guardarSinCliente(admin, yo.despacho_id, nombre, bytes, clase,
+              `Ningún cliente tiene el RFC ${rfcsFactura.join(" ni ")}`);
+            resultados.push({ nombre, ...r });
+            continue;
+          }
+          for (const c of clientesFactura) {
+            const guardado = await guardarEnRepositorio(admin, c.id, nombre, bytes, clase, "entrada");
+            if (!guardado.id) {
+              resultados.push({ nombre: `${nombre} → ${c.razon_social}`, texto: guardado.error ?? "No se pudo guardar", bien: false });
+              continue;
+            }
+            const r = await guardarFacturaDePdf(guardado.id, c.id, c.rfc, leidoPdf);
+            resultados.push({ nombre: `${nombre} → ${c.razon_social}`, ...r });
+          }
+          continue;
+        }
+      }
+      const texto = clase.tipo === "pdf"
+        ? await (await import("@/lib/pdf")).leerTextoPdf(bytes)
+        : await (await import("@/lib/ocr")).leerTextoImagen(bytes);
+      const clientes = await clientesPorRfc(admin, yo.despacho_id, rfcsEn(texto));
+      if (clientes.length === 0) {
+        const r = await guardarSinCliente(admin, yo.despacho_id, nombre, bytes, clase,
+          "No se encontró el RFC de ningún cliente en el documento");
+        resultados.push({ nombre, ...r });
+        continue;
+      }
+      for (const c of clientes) {
+        const r = await guardarDocumentoDeCliente(admin, c.id, nombre, bytes, clase);
+        resultados.push({ nombre: `${nombre} → ${c.razon_social}`, ...r });
+      }
+    } catch (error) {
+      console.error(`Lectura de ${nombre} (${clase.tipo}):`, error);
+      resultados.push({ nombre, texto: "No se pudo leer el documento", bien: false });
     }
-    const { error: errorSubida } = await admin.storage.from("facturas").upload(
-      ruta, new Blob([bytes as BlobPart], { type: clase.mime }), { contentType: clase.mime },
-    );
-    if (errorSubida) {
-      await admin.from("archivo").update({ estado: "error", motivo_error: "No se pudo subir el archivo" }).eq("id", id);
-      resultados.push({ nombre, texto: "No se pudo subir; vuelve a intentarlo", bien: false });
-      continue;
-    }
-
-    const lectura = await leerXml(admin, id);
-    resultados.push({ nombre, texto: lectura.texto, bien: lectura.ok });
   }
+
+  // Bitácora (RF-47): quién subió cada archivo y qué pasó con él.
+  for (const r of resultados) {
+    try {
+      await registrarAccion(supabase, "subio", { archivo: r.nombre, resultado: r.texto });
+    } catch {
+      // si no se puede registrar, la carga ya quedó hecha; no se revierte
+    }
+  }
+  revalidatePath("/entrada");
   return { resultados };
 }
 
@@ -284,4 +576,82 @@ export async function urlArchivo(ruta: string): Promise<{ url?: string; error?: 
   const { data, error } = await supabase.storage.from("facturas").createSignedUrl(ruta, 60);
   if (error || !data) return { error: "No se pudo abrir el archivo." };
   return { url: data.signedUrl };
+}
+
+// Solo administrador y contador cambian clientes y categorías.
+async function rolDecisor() {
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Inicia sesión de nuevo." } as const;
+  const { data: yo } = await supabase.from("usuario").select("despacho_id, rol").eq("id", user.id).maybeSingle();
+  if (!yo || !["administrador", "contador"].includes(yo.rol)) {
+    return { error: "Solo el administrador o el contador pueden hacer esto." } as const;
+  }
+  return { supabase, despachoId: yo.despacho_id as string };
+}
+
+// Edita la razón social y activa o desactiva al cliente. Un cliente inactivo deja de recibir facturas nuevas.
+export async function actualizarCliente(clienteId: string, datos: FormData): Promise<{ error?: string }> {
+  const r = await rolDecisor();
+  if ("error" in r) return { error: r.error };
+  const nombre = String(datos.get("razon_social") ?? "").trim();
+  if (!nombre || nombre.length > 160) return { error: "La razón social es obligatoria (máximo 160 caracteres)." };
+  const { data, error } = await r.supabase
+    .from("clientes").update({ razon_social: nombre, activo: datos.get("activo") === "on" })
+    .eq("id", clienteId).select("id");
+  if (error || !data?.length) return { error: "No se pudo guardar el cliente." };
+  revalidatePath(`/clientes/${clienteId}`);
+  revalidatePath("/clientes");
+  revalidatePath("/dashboard");
+  return {};
+}
+
+// Categoría propia de un cliente, además de las del despacho (RF-29).
+export async function guardarCategoriaCliente(clienteId: string, datos: FormData): Promise<{ error?: string }> {
+  const r = await rolDecisor();
+  if ("error" in r) return { error: r.error };
+  const nombre = String(datos.get("nombre") ?? "").trim();
+  if (!nombre || nombre.length > 60) return { error: "El nombre es obligatorio (máximo 60 caracteres)." };
+  // El cliente debe ser de este despacho (la consulta usa la sesión, así que RLS también lo limita).
+  const { data: cliente } = await r.supabase
+    .from("clientes").select("id").eq("id", clienteId).eq("despacho_id", r.despachoId).maybeSingle();
+  if (!cliente) return { error: "Cliente no encontrado." };
+  const { data: repetida } = await r.supabase
+    .from("categoria").select("id").eq("cliente_id", clienteId).eq("nombre", nombre).maybeSingle();
+  if (repetida) return { error: "Este cliente ya tiene una categoría con ese nombre." };
+  const { error } = await r.supabase.from("categoria").insert({
+    despacho_id: r.despachoId, cliente_id: clienteId, nombre, deducible_default: datos.get("deducible") === "on",
+  });
+  if (error) return { error: "No se pudo guardar la categoría." };
+  revalidatePath(`/clientes/${clienteId}`);
+  return {};
+}
+
+// Consulta de nuevo al SAT las facturas del mes en curso del cliente (RF-22). Cuando exista el periodo (S3-09),
+// se usará el periodo abierto en lugar del mes.
+export async function reconsultarMesActual(clienteId: string): Promise<{ ok: boolean; texto: string }> {
+  const r = await rolDecisor();
+  if ("error" in r) return { ok: false, texto: r.error ?? "No tienes permiso para esto." };
+  const inicio = new Date();
+  inicio.setDate(1);
+  inicio.setHours(0, 0, 0, 0);
+  const { data: facturas, error } = await r.supabase
+    .from("factura").select("archivo_id")
+    .eq("cliente_id", clienteId).neq("estado_revision", "excluido")
+    .gte("emitido_en", inicio.toISOString()).limit(200);
+  if (error) return { ok: false, texto: "No se pudieron leer las facturas del mes." };
+
+  let sinRespuesta = 0;
+  for (const f of facturas ?? []) {
+    const resultado = await reconsultarSat(f.archivo_id);
+    if (!resultado.ok) sinRespuesta++;
+  }
+  const { count } = await r.supabase
+    .from("factura").select("id", { count: "exact", head: true })
+    .eq("cliente_id", clienteId).eq("estado_sat", "cancelada").gte("emitido_en", inicio.toISOString());
+  revalidatePath(`/clientes/${clienteId}`);
+  return {
+    ok: true,
+    texto: `Se consultaron ${facturas?.length ?? 0} facturas del mes. Canceladas: ${count ?? 0}. Sin respuesta del SAT: ${sinRespuesta}.`,
+  };
 }

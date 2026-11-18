@@ -172,15 +172,15 @@ export async function getCliente(id: string): Promise<Cliente | undefined> {
   const supabase = await supabaseServidor();
   const { data } = await supabase
     .from("clientes")
-    .select("id, razon_social, rfc")
+    .select("id, razon_social, rfc, activo")
     .eq("id", id)
     .maybeSingle();
-  return data ? aCliente(data) : undefined;
+  return data ? { ...aCliente(data), activo: data.activo } : undefined;
 }
 
 // Facturas leídas de la base, con sus conceptos e impuestos (RLS limita a tu despacho).
 const SELECCION_FACTURA =
-  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, emitido_en, timbrado_en, concepto(clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, impuesto(tipo, impuesto, tasa, importe))";
+  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, regimen_receptor, fuente, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, emitido_en, timbrado_en, concepto(id, clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, categoria_id, categoria(nombre), impuesto(tipo, impuesto, tasa, importe))";
 
 type FilaFacturaCompleta = {
   id: string;
@@ -194,6 +194,8 @@ type FilaFacturaCompleta = {
   nombre_receptor: string | null;
   uso_cfdi: string;
   forma_pago: string | null;
+  regimen_receptor: string | null;
+  fuente: string;
   metodo_pago: string | null;
   subtotal: string;
   total: string;
@@ -205,11 +207,14 @@ type FilaFacturaCompleta = {
   emitido_en: string;
   timbrado_en: string;
   concepto: {
+    id: string;
     clave_prod_serv: string;
     descripcion: string;
     cantidad: string;
     importe: string;
     objeto_impuesto: string | null;
+    categoria_id: string | null;
+    categoria: { nombre: string } | null;
     impuesto: { tipo: string; impuesto: string; tasa: string; importe: string }[];
   }[];
 };
@@ -227,6 +232,8 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
   receptorRfc: f.rfc_receptor,
   usoCfdi: f.uso_cfdi,
   formaPago: f.forma_pago,
+  regimenReceptor: f.regimen_receptor,
+  fuente: f.fuente === "pdf" ? "pdf" : "xml",
   metodoPago: f.metodo_pago as Factura["metodoPago"],
   moneda: f.moneda,
   subtotal: Number(f.subtotal),
@@ -241,6 +248,8 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
   categoriaPropuesta: "Sin clasificar",
   conceptos: f.concepto.map(
     (c): Concepto => ({
+      id: c.id,
+      categoriaGuardada: c.categoria?.nombre ?? null,
       claveProdServ: c.clave_prod_serv,
       descripcion: c.descripcion,
       cantidad: Number(c.cantidad),
@@ -265,10 +274,34 @@ export async function getFacturasPorRevisar(): Promise<Factura[]> {
     .eq("estado_revision", "por_revisar")
     .order("emitido_en", { ascending: false });
   if (error) throw new Error(`No se pudieron leer las facturas: ${error.message}`);
-  const [porClave, porEmisor] = await Promise.all([mapaClaveCategoria(), mapaReglasEmisor()]);
-  return (data as unknown as FilaFacturaCompleta[]).map((f) =>
-    conCategoria(aFactura(f), porClave, porEmisor),
-  );
+  const [porClave, porEmisor, todas] = await Promise.all([
+    mapaClaveCategoria(),
+    mapaReglasEmisor(),
+    supabase.from("factura").select("cliente_id, relacion, rfc_emisor, rfc_receptor").neq("estado_revision", "excluido"),
+  ]);
+  // Cuántas facturas (no excluidas) tiene cada cliente con cada contraparte: si es 1, el emisor es nuevo.
+  const conteo = new Map<string, number>();
+  for (const t of todas.data ?? []) {
+    const clave = `${t.cliente_id}|${t.relacion === "recibida" ? t.rfc_emisor : t.rfc_receptor}`;
+    conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
+  }
+  const facturas = (data as unknown as FilaFacturaCompleta[]).map((f) => {
+    const factura = conCategoria(aFactura(f), porClave, porEmisor);
+    const contraparte = factura.relacion === "recibida" ? factura.emisorRfc : factura.receptorRfc;
+    factura.emisorNuevo = conteo.get(`${f.cliente_id}|${contraparte}`) === 1;
+    // Prioridad (RF-31): primero lo que bloquea el resumen, luego lo que conviene mirar.
+    const sinCategoria = factura.conceptos.some((c) => !c.categoria);
+    if (sinCategoria) {
+      factura.prioridad = "alta";
+      factura.motivoPrioridad = "Hay conceptos sin categoría";
+    } else if (factura.emisorNuevo) {
+      factura.prioridad = "alta";
+      factura.motivoPrioridad = "Primera factura de este proveedor";
+    }
+    return factura;
+  });
+  // Stable sort: las de prioridad alta primero; dentro de cada grupo, las más recientes primero.
+  return facturas.sort((a, b) => Number(b.prioridad === "alta") - Number(a.prioridad === "alta"));
 }
 
 // Clave → nombre de la categoría que el contador asignó en este despacho.
@@ -303,6 +336,10 @@ function conCategoria(
   const deEmisor = porEmisor.get(contraparte);
 
   factura.conceptos = factura.conceptos.map((c): Concepto => {
+    // Una factura aprobada conserva la categoría que se fijó al aprobarla.
+    if (factura.estadoRevision === "clasificado") {
+      return { ...c, categoria: c.categoriaGuardada ?? undefined, origen: undefined };
+    }
     const manual = porClave.get(c.claveProdServ);
     if (manual) return { ...c, categoria: manual, origen: "regla" };
     if (deEmisor) return { ...c, categoria: deEmisor, origen: "emisor" };
@@ -366,12 +403,13 @@ export async function getFacturaPorId(id: string): Promise<Factura | undefined> 
 export type Categoria = { id: string; nombre: string; deducibleDefault: boolean };
 
 // Categorías del despacho (no las de un cliente en particular).
-export async function getCategorias(): Promise<Categoria[]> {
+// Categorías del despacho; con clienteId, también las propias de ese cliente.
+export async function getCategorias(clienteId?: string): Promise<Categoria[]> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("categoria")
     .select("id, nombre, deducible_default")
-    .is("cliente_id", null)
+    .or(clienteId ? `cliente_id.is.null,cliente_id.eq.${clienteId}` : "cliente_id.is.null")
     .order("nombre");
   if (error) throw new Error(`No se pudieron leer las categorías: ${error.message}`);
   return data.map((c) => ({ id: c.id, nombre: c.nombre, deducibleDefault: c.deducible_default }));
@@ -421,4 +459,71 @@ export async function getEnlaceEnvio(clienteId: string): Promise<{ token: string
   const { data } = await supabaseAdmin()
     .from("enlace_acceso").select("token, vence_en").eq("cliente_id", clienteId).maybeSingle();
   return data ? { token: data.token, venceEn: data.vence_en } : null;
+}
+
+// Facturas de la bandeja de entrada cuyo RFC no coincide con ningún cliente (RF-01).
+export async function getArchivosSinCliente(): Promise<{ id: string; nombre: string; motivo: string; recibido: string }[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("archivo")
+    .select("id, ruta_original, motivo_error, recibido_en")
+    .is("cliente_id", null)
+    .order("recibido_en", { ascending: false });
+  if (error) throw new Error(`No se pudo leer la bandeja de entrada: ${error.message}`);
+  return data.map((a) => ({
+    id: a.id,
+    nombre: a.ruta_original.split("/").pop() ?? a.ruta_original,
+    motivo: a.motivo_error ?? "",
+    recibido: a.recibido_en,
+  }));
+}
+
+// Cambios de estado de un archivo, del más antiguo al más reciente (RF-06).
+export async function getHistorialArchivo(archivoId: string) {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("archivo_historial").select("estado, motivo, ocurrido_en")
+    .eq("archivo_id", archivoId).order("ocurrido_en");
+  if (error) throw new Error(`No se pudo leer el historial: ${error.message}`);
+  return data ?? [];
+}
+
+// CFDI que esta factura relaciona (notas de crédito, sustituciones) y si ya están en el repositorio (S2-07).
+export async function getRelacionesArchivo(archivoId: string) {
+  const supabase = await supabaseServidor();
+  const { data: factura } = await supabase.from("factura").select("id").eq("archivo_id", archivoId).maybeSingle();
+  if (!factura) return [];
+  const { data, error } = await supabase
+    .from("factura_relacion").select("tipo_relacion, uuid_relacionado, factura_relacionada_id")
+    .eq("factura_id", factura.id);
+  if (error) throw new Error(`No se pudieron leer los CFDI relacionados: ${error.message}`);
+  return data ?? [];
+}
+
+// Cambios de categoría de los conceptos de una factura, del más reciente al más antiguo (RF-32).
+export async function getHistorialClasificacion(conceptoIds: string[]) {
+  if (conceptoIds.length === 0) return [];
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("clasificacion_historial").select("categoria_anterior, categoria_nueva, cambiado_en")
+    .in("concepto_id", conceptoIds).order("cambiado_en", { ascending: false });
+  if (error) throw new Error(`No se pudo leer el historial de categorías: ${error.message}`);
+  return data ?? [];
+}
+
+// Categorías propias de un cliente (RF-29). Las del despacho se leen con getCategorias.
+export async function getCategoriasDeCliente(clienteId: string): Promise<Categoria[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("categoria").select("id, nombre, deducible_default")
+    .eq("cliente_id", clienteId).order("nombre");
+  if (error) throw new Error(`No se pudieron leer las categorías del cliente: ${error.message}`);
+  return data.map((c) => ({ id: c.id, nombre: c.nombre, deducibleDefault: c.deducible_default }));
+}
+
+// Factura que se leyó de un archivo (XML o PDF), o undefined si el archivo no tiene factura.
+export async function getFacturaDeArchivo(archivoId: string): Promise<Factura | undefined> {
+  const supabase = await supabaseServidor();
+  const { data } = await supabase.from("factura").select("id").eq("archivo_id", archivoId).maybeSingle();
+  return data ? getFacturaPorId(data.id) : undefined;
 }

@@ -23,7 +23,7 @@ begin
   if exists (select 1 from information_schema.columns
              where table_schema = 'public' and table_name = 'clientes' and column_name = 'enlace_token') then
     insert into public.enlace_acceso (cliente_id, token, vence_en)
-      select id, enlace_token, now() where enlace_token is not null
+      select id, enlace_token, now() from public.clientes where enlace_token is not null
       on conflict (cliente_id) do nothing;
     alter table public.clientes drop column enlace_token;
   end if;

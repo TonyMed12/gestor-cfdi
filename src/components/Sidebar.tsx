@@ -7,12 +7,14 @@ import { getTotalPorRevisar } from "@/lib/mock-data";
 
 const links = [
   { href: "/dashboard", label: "Tablero" },
+  { href: "/entrada", label: "Bandeja de entrada" },
   { href: "/clientes", label: "Clientes y archivos" },
   { href: "/bandeja", label: "Bandeja de revisión", badge: true },
   { href: "/categorias", label: "Categorías" },
   { href: "/claves", label: "Claves del SAT" },
   { href: "/reglas", label: "Reglas por emisor" },
   { href: "/resumen", label: "Resúmenes por periodo" },
+  { href: "/bitacora", label: "Bitácora" },
 ];
 
 // Secciones del menú que todavía no existen: se muestran deshabilitadas en lugar de un enlace a "#".

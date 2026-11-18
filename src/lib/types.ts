@@ -22,6 +22,7 @@ export interface Cliente {
   id: string;
   razonSocial: string;
   rfc: string;
+  activo?: boolean;
   sinLeer: number;
   porRevisar: number;
   conError: number;
@@ -41,6 +42,8 @@ export interface Concepto {
   cantidad: number;
   importe: number;
   impuestos: Impuesto[];
+  id?: string;
+  categoriaGuardada?: string | null; // categoría fijada al aprobar (null = aún no aprobada)
   categoria?: string; // se calcula al leer, según la prioridad de datos.ts
   origen?: OrigenClasificacion;
 }
@@ -69,6 +72,8 @@ export interface Factura {
   receptorRfc: string;
   usoCfdi: string;
   formaPago: string | null;
+  regimenReceptor?: string | null;
+  fuente?: "xml" | "pdf"; // de dónde se leyó la factura (RN-04)
   metodoPago: "PUE" | "PPD" | null;
   moneda: string;
   subtotal: number;

@@ -4,8 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
-import { getArchivos, getCliente, getEnlaceEnvio, getPerfil } from "@/lib/datos";
+import { getArchivos, getCategoriasDeCliente, getCliente, getEnlaceEnvio, getPerfil } from "@/lib/datos";
 import { dinero } from "@/lib/formato";
+import { CategoriasDelCliente, EditarCliente, ReconsultarMes } from "./AjustesCliente";
 import { EnlaceEnvio } from "./EnlaceEnvio";
 import { ReintentarLectura } from "./ReintentarLectura";
 import { SubirArchivos } from "./SubirArchivos";
@@ -44,6 +45,7 @@ export default async function ClienteDetallePage({
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   // El token solo se entrega a quien puede regenerarlo; auxiliares no lo ven.
   const enlace = puedeEditar ? await getEnlaceEnvio(cliente.id) : null;
+  const categoriasCliente = puedeEditar ? await getCategoriasDeCliente(cliente.id) : [];
 
   return (
     <AppShell active="/clientes">
@@ -58,6 +60,27 @@ export default async function ClienteDetallePage({
       </header>
 
       <SubirArchivos clienteId={cliente.id} />
+
+      {puedeEditar && (
+        <details className="group rounded-xl border border-border bg-surface p-6">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-lg font-semibold">
+            Editar cliente
+            <span className="text-sm font-normal text-text-muted group-open:hidden">Mostrar</span>
+            <span className="hidden text-sm font-normal text-text-muted group-open:inline">Ocultar</span>
+          </summary>
+          <div className="mt-5 flex flex-col gap-5">
+            <EditarCliente clienteId={cliente.id} razonSocial={cliente.razonSocial} activo={cliente.activo ?? true} />
+            <div className="border-t border-[#EEF1F4] pt-5">
+              <h3 className="m-0 mb-3 text-base font-semibold">Categorías propias</h3>
+              <CategoriasDelCliente clienteId={cliente.id} categorias={categoriasCliente} />
+            </div>
+            <div className="border-t border-[#EEF1F4] pt-5">
+              <h3 className="m-0 mb-3 text-base font-semibold">Consulta al SAT</h3>
+              <ReconsultarMes clienteId={cliente.id} />
+            </div>
+          </div>
+        </details>
+      )}
 
       {puedeEditar && <EnlaceEnvio clienteId={cliente.id} enlaceInicial={enlace} />}
 
@@ -110,7 +133,7 @@ export default async function ClienteDetallePage({
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex flex-col items-end gap-1.5">
-                        {a.tipo === "xml" ? (
+                        {a.tipo === "xml" || (a.tipo === "pdf" && a.factura) ? (
                           <Link href={`/clientes/${cliente.id}/archivos/${a.id}`} aria-label={`Ver ${a.nombre}`} className="text-sm font-semibold">
                             Ver
                           </Link>

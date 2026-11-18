@@ -1,14 +1,15 @@
--- Envío por enlace (RF-04): cada cliente tiene un enlace secreto para subir sus XML sin cuenta.
--- Ejecutar después de 12-regla-emisor.sql.
+-- Envío por enlace (RF-04), parte 1: columnas para archivos que llegan por enlace.
+-- Ejecutar después de 12-regla-emisor.sql. Se puede volver a ejecutar sin problema.
 
 begin;
 
--- Token del enlace. Null = el cliente todavía no tiene enlace. Regenerarlo invalida el anterior.
-alter table public.clientes add column enlace_token varchar(64) unique;
-
 -- Los archivos que llegan por enlace no tienen usuario que los subió.
 alter table public.archivo alter column subido_por drop not null;
-alter table public.archivo add column origen varchar(10) not null default 'manual'
-  check (origen in ('manual', 'enlace'));
+alter table public.archivo add column if not exists origen varchar(10) not null default 'manual';
+alter table public.archivo drop constraint if exists archivo_origen_check;
+alter table public.archivo add constraint archivo_origen_check check (origen in ('manual', 'enlace'));
+
+-- Columna temporal del token (14 la mueve a su tabla y la quita).
+alter table public.clientes add column if not exists enlace_token varchar(64) unique;
 
 commit;

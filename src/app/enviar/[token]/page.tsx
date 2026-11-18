@@ -37,9 +37,7 @@ export default async function EnviarPage({ params }: { params: Promise<{ token: 
       <header className="flex flex-col gap-2">
         <h1 className="m-0 text-[26px] font-bold">Envía tus facturas</h1>
         <p className="m-0 text-[15px] text-text-muted">
-          Para {cliente.razon_social}. {venció(acceso)
-            ? ""
-            : "Elige tus archivos XML de factura y envíalos. No necesitas cuenta."}
+          Para {cliente.razon_social}. {venció(acceso) ? "" : "Selecciona tus archivos XML y envíalos."}
         </p>
       </header>
       {cuerpo}

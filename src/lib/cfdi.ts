@@ -33,6 +33,9 @@ export type FacturaLeida = {
   emitido_en: string;
   timbrado_en: string;
   sello: string | null; // solo sirve para consultar al SAT; no se guarda
+  regimen_receptor: string | null;
+  // Notas de crédito, sustituciones, etc. (TipoRelacion de la factura) y los UUID que relaciona.
+  relacionados: { tipo_relacion: string; uuid: string }[];
 };
 
 // exclusion: motivo por el que la factura se guarda pero queda fuera de los resúmenes (RF-40).
@@ -203,6 +206,14 @@ export function leerCfdi(xml: string): CfdiLeido | { error: string } {
       emitido_en: aFecha(fecha),
       timbrado_en: aFecha(fechaTimbrado),
       sello: attr(c, "Sello") ?? null,
+      regimen_receptor: attr(receptor, "RegimenFiscalReceptor") ?? null,
+      relacionados: lista(hijo(c, "CfdiRelacionados")).flatMap((grupo) => {
+        const tipo = attr(grupo, "TipoRelacion") ?? "";
+        return lista(hijo(grupo, "CfdiRelacionado"))
+          .map((r) => attr(r, "UUID"))
+          .filter((u): u is string => Boolean(u))
+          .map((u) => ({ tipo_relacion: tipo, uuid: u.toUpperCase() }));
+      }),
     },
     conceptos,
     exclusion,
@@ -243,6 +254,7 @@ export type DetalleCfdi = {
     unidad: string | null;
     impuestos: { tipo: "trasladado" | "retenido"; impuesto: string; tasa: string | null; importe: string }[];
   }[];
+  notas?: string[]; // solo para facturas leídas de PDF: dudas a revisar
 };
 
 const nombreImpuesto = (codigo: string | undefined) =>

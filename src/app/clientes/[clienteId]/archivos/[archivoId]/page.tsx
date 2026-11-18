@@ -5,15 +5,37 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { describir, ESTADO_SAT, FORMA_PAGO, METODO_PAGO, MONEDA, TIPO_COMPROBANTE } from "@/lib/catalogos-cfdi";
 import { detalleCfdi } from "@/lib/cfdi";
+import { detallePdfArchivo } from "@/lib/detalle-pdf";
 import { NOMBRE_APP } from "@/lib/config";
-import { getArchivoParaVer, getCliente, getDescripcionesSat, getPerfil } from "@/lib/datos";
+import {
+  getArchivoParaVer, getCliente, getDescripcionesSat, getHistorialArchivo, getPerfil, getRelacionesArchivo,
+} from "@/lib/datos";
 import { VerArchivo } from "../../VerArchivo";
 import { BotonSat } from "./BotonSat";
 
 export const metadata = { title: `Detalle del CFDI · ${NOMBRE_APP}` };
 
+const ESTADO_ARCHIVO: Record<string, string> = {
+  recibido: "Recibido",
+  leyendo: "Leyendo",
+  por_revisar: "Por revisar",
+  clasificado: "Clasificado",
+  error: "Con error",
+};
+
+const TIPO_RELACION: Record<string, string> = {
+  "01": "Nota de crédito",
+  "02": "Nota de débito",
+  "03": "Devolución",
+  "04": "Sustitución de CFDI previo",
+  "05": "Traslado",
+  "06": "Factura de anticipo",
+  "07": "Aplicación de anticipo",
+};
+
 function dinero(valor: string | null, moneda: string | null) {
   if (valor === null) return "—";
+  if (valor.startsWith("PENDIENTE")) return valor;
   const n = Number(valor);
   try {
     return n.toLocaleString("es-MX", { style: "currency", currency: moneda?.length === 3 ? moneda : "MXN" });
@@ -32,10 +54,11 @@ function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) 
 }
 
 function Fila({ etiqueta, valor, mono, fuerte }: { etiqueta: string; valor: ReactNode; mono?: boolean; fuerte?: boolean }) {
+  const pendiente = typeof valor === "string" && valor.startsWith("PENDIENTE");
   return (
     <div className="flex justify-between gap-4 py-1 text-[14px]">
       <dt className={`shrink-0 ${fuerte ? "font-semibold" : "text-text-muted"}`}>{etiqueta}</dt>
-      <dd className={`m-0 text-right ${mono ? "font-mono text-[13px]" : ""} ${fuerte ? "font-bold text-accent-soft-text" : ""}`}>{valor}</dd>
+      <dd className={`m-0 text-right ${mono ? "font-mono text-[13px]" : ""} ${fuerte ? "font-bold text-accent-soft-text" : ""} ${pendiente ? "font-semibold text-warn-soft-text" : ""}`}>{valor}</dd>
     </div>
   );
 }
@@ -49,18 +72,22 @@ export default async function DetalleArchivoPage({
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   const encontrado = await getArchivoParaVer(clienteId, archivoId);
-  if (!encontrado || encontrado.archivo.tipo !== "xml") notFound();
+  if (!encontrado || (encontrado.archivo.tipo !== "xml" && encontrado.archivo.tipo !== "pdf")) notFound();
   const { archivo, xml, sat } = encontrado;
+  const esPdf = archivo.tipo === "pdf";
   const perfil = await getPerfil();
   const puedeConsultar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const estadoSat = sat?.estado ? ESTADO_SAT[sat.estado] : null;
 
-  const detalle = xml === null ? { error: "No se pudo abrir el archivo guardado" } : detalleCfdi(xml);
+  const detalle = esPdf
+    ? await detallePdfArchivo(archivoId, archivo.ruta_original)
+    : xml === null ? { error: "No se pudo abrir el archivo guardado" } : detalleCfdi(xml);
   const d = "error" in detalle ? null : detalle;
-  const catalogos = d
+  const catalogos = d && !esPdf
     ? await getDescripcionesSat([d.receptor.uso ?? ""], [d.emisor.regimen ?? "", d.receptor.regimen ?? ""])
     : null;
   const nombre = archivo.ruta_original.split("/").pop() ?? "";
+  const [historial, relaciones] = await Promise.all([getHistorialArchivo(archivoId), getRelacionesArchivo(archivoId)]);
 
   return (
     <AppShell active="/clientes">
@@ -72,7 +99,7 @@ export default async function DetalleArchivoPage({
           <h1 className="m-0 text-[22px] font-bold break-all">{nombre}</h1>
         </div>
         <div className="rounded-lg border border-accent px-3 py-1.5">
-          <VerArchivo ruta={archivo.ruta_original} etiqueta="Abrir XML original" />
+          <VerArchivo ruta={archivo.ruta_original} etiqueta={esPdf ? "Abrir PDF original" : "Abrir XML original"} />
         </div>
       </header>
 
@@ -88,6 +115,17 @@ export default async function DetalleArchivoPage({
         </div>
       ) : (
         <article className="flex flex-col gap-6 rounded-2xl border border-border bg-surface p-6 md:p-8">
+          {esPdf && (
+            <div role="note" className="flex flex-col gap-2 rounded-xl border border-border bg-warn-soft px-4 py-3 text-[14px] text-warn-soft-text">
+              <strong>Datos leídos del PDF.</strong>
+              <span>Los campos marcados PENDIENTE no se pudieron leer o no son claros. Confirma los datos contra el XML cuando llegue.</span>
+              {d.notas && d.notas.length > 0 && (
+                <ul className="m-0 list-disc pl-5">
+                  {d.notas.map((n) => <li key={n}>{n}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2.5 border-b border-border pb-4">
             <h2 className="m-0 mr-1 text-lg font-semibold">Resumen del CFDI</h2>
             {d.version && <Badge variant="success">v{d.version}</Badge>}
@@ -214,6 +252,40 @@ export default async function DetalleArchivoPage({
           </Seccion>
         </article>
       )}
+
+      {relaciones.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-6">
+          <h2 className="m-0 text-lg font-semibold">CFDI relacionados</h2>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[14px]">
+            {relaciones.map((r) => (
+              <li key={`${r.tipo_relacion}-${r.uuid_relacionado}`} className="flex flex-wrap justify-between gap-2">
+                <span>{TIPO_RELACION[r.tipo_relacion] ?? `Tipo ${r.tipo_relacion}`}</span>
+                <span className="font-mono text-[13px]">
+                  {r.uuid_relacionado} · {r.factura_relacionada_id ? "en el repositorio" : "no está en el repositorio"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-6">
+        <h2 className="m-0 text-lg font-semibold">Historial</h2>
+        <ol className="m-0 flex list-none flex-col gap-1.5 p-0 text-[14px]">
+          {historial.map((h, i) => (
+            <li key={i} className="flex flex-wrap justify-between gap-2">
+              <span>
+                <strong>{ESTADO_ARCHIVO[h.estado] ?? h.estado}</strong>
+                {h.motivo ? ` · ${h.motivo}` : ""}
+              </span>
+              <span className="text-text-muted">
+                {new Date(h.ocurrido_en).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" })}
+              </span>
+            </li>
+          ))}
+          {historial.length === 0 && <li className="text-text-muted">Sin movimientos registrados.</li>}
+        </ol>
+      </section>
     </AppShell>
   );
 }

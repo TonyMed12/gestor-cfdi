@@ -41,12 +41,17 @@ export function solicitudSat(datos: DatosConsulta) {
 }
 
 // null significa "no se pudo consultar" (sin respuesta, tiempo agotado o respuesta rara); no es lo mismo que "no encontrada".
+// Hasta 3 intentos con espera creciente. Solo reintenta si el SAT no respondió, no si respondió "no encontrada".
 export async function consultarEstadoSat(datos: DatosConsulta): Promise<EstadoSat | null> {
   const { url, headers, body } = solicitudSat(datos);
-  try {
-    const respuesta = await fetch(url, { method: "POST", headers, body, signal: AbortSignal.timeout(8000) });
-    return respuesta.ok ? interpretarEstado(await respuesta.text()) : null;
-  } catch {
-    return null;
+  for (let intento = 1; intento <= 3; intento++) {
+    try {
+      const respuesta = await fetch(url, { method: "POST", headers, body, signal: AbortSignal.timeout(8000) });
+      if (respuesta.ok) return interpretarEstado(await respuesta.text());
+    } catch {
+      // sin respuesta: se intenta de nuevo
+    }
+    if (intento < 3) await new Promise((r) => setTimeout(r, intento * 1500));
   }
+  return null;
 }

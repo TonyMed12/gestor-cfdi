@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { NOMBRE_APP } from "@/lib/config";
-import { getClientes, getPerfil } from "@/lib/datos";
+import { getArchivosSinCliente, getClientes, getPerfil } from "@/lib/datos";
 import { getPeriodoActual } from "@/lib/mock-data";
 import type { Cliente } from "@/lib/types";
 
 export const metadata = { title: `Tablero · ${NOMBRE_APP}` };
 
-const armarResumen = (clientes: Cliente[]) => {
+const armarResumen = (clientes: Cliente[], sinCliente: number) => {
   const conError = clientes.reduce((s, c) => s + c.conError, 0);
   return [
     {
@@ -27,17 +27,19 @@ const armarResumen = (clientes: Cliente[]) => {
       nota: conError > 0 ? "Revisa el motivo en cada cliente" : "Todo se pudo leer",
     },
     {
-      label: "XML faltantes",
-      valor: clientes.reduce((s, c) => s + c.faltantes, 0),
-      nota: "Aún no se calcula",
+      label: "Sin cliente",
+      valor: sinCliente,
+      nota: sinCliente > 0 ? "Su RFC no coincide con ningún cliente" : "Todo tiene cliente",
+      href: "/entrada",
+      destacado: sinCliente > 0,
     },
   ];
 };
 
 export default async function DashboardPage() {
   const perfil = await getPerfil();
-  const clientes = await getClientes();
-  const resumen = armarResumen(clientes);
+  const [clientes, sinCliente] = await Promise.all([getClientes(), getArchivosSinCliente()]);
+  const resumen = armarResumen(clientes, sinCliente.length);
 
   return (
     <AppShell active="/dashboard">
@@ -65,22 +67,22 @@ export default async function DashboardPage() {
         aria-label="Resumen de pendientes"
         className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4"
       >
-        {resumen.map((r) => (
-          <div
-            key={r.label}
-            className="flex flex-col gap-1.5 rounded-xl border border-border bg-surface p-5"
-          >
-            <span className="text-sm text-text-muted">{r.label}</span>
-            <span
-              className={`text-[32px] font-bold ${
-                r.destacado ? "text-warn-soft-text" : ""
-              }`}
-            >
-              {r.valor}
-            </span>
-            <span className="text-[13px] text-text-muted">{r.nota}</span>
-          </div>
-        ))}
+        {resumen.map((r) => {
+          const tarjeta = (
+            <div className="flex h-full flex-col gap-1.5 rounded-xl border border-border bg-surface p-5">
+              <span className="text-sm text-text-muted">{r.label}</span>
+              <span className={`text-[32px] font-bold ${r.destacado ? "text-warn-soft-text" : ""}`}>
+                {r.valor}
+              </span>
+              <span className="text-[13px] text-text-muted">{r.nota}</span>
+            </div>
+          );
+          return r.href ? (
+            <Link key={r.label} href={r.href} className="no-underline">{tarjeta}</Link>
+          ) : (
+            <div key={r.label}>{tarjeta}</div>
+          );
+        })}
       </section>
 
       <section className="flex flex-col rounded-xl border border-border bg-surface">
