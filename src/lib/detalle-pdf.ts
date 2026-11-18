@@ -85,7 +85,7 @@ function armarDetallePdf(f: Factura, ad: DatosAdicionalesPdf): DetalleCfdi {
 // Resumen de una factura leída de PDF: vuelve a leer el PDF guardado para los datos que la factura no conserva.
 export async function detallePdfArchivo(archivoId: string, ruta: string): Promise<DetalleCfdi | { error: string }> {
   const factura = await getFacturaDeArchivo(archivoId);
-  if (!factura) return { error: "No hay factura leída de este PDF" };
+  if (!factura) return { error: "Este PDF todavía no se leyó como factura" };
   const supabase = await supabaseServidor();
   const { data: descarga } = await supabase.storage.from("facturas").download(ruta);
   const texto = descarga ? await leerTextoPdf(new Uint8Array(await descarga.arrayBuffer())) : "";

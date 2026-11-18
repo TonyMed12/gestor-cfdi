@@ -2,6 +2,7 @@ import type { Cliente, Concepto, Factura, Impuesto } from "./types";
 import { supabaseServidor } from "./supabase-servidor";
 import { supabaseAdmin } from "./supabase-admin";
 import { categoriaSugeridaDeClave } from "./categorias-por-defecto";
+import { REGLAS_BASE } from "./reglas-base-claves";
 
 type FilaCliente = {
   id: string;
@@ -343,6 +344,8 @@ function conCategoria(
     const manual = porClave.get(c.claveProdServ);
     if (manual) return { ...c, categoria: manual, origen: "regla" };
     if (deEmisor) return { ...c, categoria: deEmisor, origen: "emisor" };
+    const base = REGLAS_BASE[c.claveProdServ];
+    if (base) return { ...c, categoria: base, origen: "base" };
     const sugerida = categoriaSugeridaDeClave(c.claveProdServ);
     if (sugerida) return { ...c, categoria: sugerida, origen: "division" };
     return { ...c, categoria: undefined, origen: undefined };
@@ -364,9 +367,11 @@ function conCategoria(
     ? "regla"
     : origenes.has("emisor")
       ? "emisor"
-      : origenes.has("division")
-        ? "division"
-        : undefined;
+      : origenes.has("base")
+        ? "base"
+        : origenes.has("division")
+          ? "division"
+          : undefined;
   return factura;
 }
 
@@ -415,7 +420,7 @@ export async function getCategorias(clienteId?: string): Promise<Categoria[]> {
   return data.map((c) => ({ id: c.id, nombre: c.nombre, deducibleDefault: c.deducible_default }));
 }
 
-// porDefecto: la categoría viene de la sugerencia por división y el contador aún no la eligió.
+// porDefecto: la categoría viene de una sugerencia automática (regla base o división) y el contador aún no la eligió.
 export type ClaveEnUso = {
   clave: string;
   descripcion: string;
@@ -442,7 +447,7 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
   const idPorNombre = new Map((await getCategorias()).map((c) => [c.nombre, c.id]));
   return claves.map((clave) => {
     const asignada = asignadas.get(clave) ?? null;
-    const sugerida = categoriaSugeridaDeClave(clave);
+    const sugerida = REGLAS_BASE[clave] ?? categoriaSugeridaDeClave(clave);
     const sugeridaId = sugerida ? (idPorNombre.get(sugerida) ?? null) : null;
     return {
       clave,
@@ -526,4 +531,41 @@ export async function getFacturaDeArchivo(archivoId: string): Promise<Factura | 
   const supabase = await supabaseServidor();
   const { data } = await supabase.from("factura").select("id").eq("archivo_id", archivoId).maybeSingle();
   return data ? getFacturaPorId(data.id) : undefined;
+}
+
+// Totales por categoría de un cliente, solo de facturas aprobadas (RF-39, versión preliminar).
+// Ingreso = factura emitida por el cliente; gasto = factura recibida por el cliente.
+export type FilaCategoria = { tipo: "Ingreso" | "Gasto"; categoria: string; facturas: number; subtotal: number; ivaTrasladado: number };
+
+export async function getResumenCategoriasCliente(clienteId: string): Promise<FilaCategoria[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("factura")
+    .select("id, relacion, concepto(importe, categoria(nombre), impuesto(tipo, impuesto, importe))")
+    .eq("cliente_id", clienteId)
+    .eq("estado_revision", "clasificado");
+  if (error) throw new Error(`No se pudo calcular el resumen: ${error.message}`);
+
+  const mapa = new Map<string, FilaCategoria & { ids: Set<string> }>();
+  for (const f of (data ?? []) as unknown as {
+    id: string;
+    relacion: string;
+    concepto: { importe: string; categoria: { nombre: string } | null; impuesto: { tipo: string; impuesto: string; importe: string }[] }[];
+  }[]) {
+    const tipo: "Ingreso" | "Gasto" = f.relacion === "emitida" ? "Ingreso" : "Gasto";
+    for (const c of f.concepto) {
+      const categoria = c.categoria?.nombre ?? "Sin categoría";
+      const clave = `${tipo}|${categoria}`;
+      const fila = mapa.get(clave) ?? { tipo, categoria, facturas: 0, subtotal: 0, ivaTrasladado: 0, ids: new Set<string>() };
+      fila.ids.add(f.id);
+      fila.subtotal += Number(c.importe);
+      fila.ivaTrasladado += c.impuesto
+        .filter((i) => i.tipo === "trasladado" && i.impuesto === "IVA")
+        .reduce((s, i) => s + Number(i.importe), 0);
+      mapa.set(clave, fila);
+    }
+  }
+  return [...mapa.values()]
+    .map(({ ids, ...fila }) => ({ ...fila, facturas: ids.size }))
+    .sort((a, b) => a.tipo.localeCompare(b.tipo) || b.subtotal - a.subtotal);
 }

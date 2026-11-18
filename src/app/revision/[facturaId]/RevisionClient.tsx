@@ -10,6 +10,7 @@ import { aprobarFactura, rechazarFactura } from "./acciones";
 const etiquetaOrigen: Record<OrigenClasificacion, string> = {
   regla: "Clave asignada a mano",
   emisor: "Regla por emisor",
+  base: "Regla base (palabra clave)",
   division: "Sugerida por la clave del SAT",
   ia: "Sugerencia de IA",
 };

@@ -16,7 +16,7 @@ export type EstadoRevision =
   | "excluido";
 
 // "emisor": regla del contador por RFC. "regla": clave asignada a mano. "division": sugerencia por división del SAT.
-export type OrigenClasificacion = "ia" | "emisor" | "regla" | "division";
+export type OrigenClasificacion = "ia" | "emisor" | "regla" | "base" | "division";
 
 export interface Cliente {
   id: string;

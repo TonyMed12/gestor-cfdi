@@ -8,7 +8,7 @@ import {
 } from "@/lib/archivos";
 import { registrarAccion } from "@/lib/bitacora";
 import { supabase } from "@/lib/supabase";
-import { procesarXml } from "./acciones";
+import { procesarDocumentoArchivo, procesarXml } from "./acciones";
 
 type Resultado = { nombre: string; texto: string; bien: boolean };
 
@@ -63,6 +63,10 @@ export function SubirArchivos({ clienteId }: { clienteId: string }) {
     }
     if (clase.tipo === "xml") {
       const lectura = await procesarXml(id);
+      return { nombre, texto: lectura.texto + nota, bien: lectura.ok };
+    }
+    if (clase.tipo === "pdf" || clase.tipo === "imagen") {
+      const lectura = await procesarDocumentoArchivo(id);
       return { nombre, texto: lectura.texto + nota, bien: lectura.ok };
     }
     return { nombre, texto: "Guardado" + nota, bien: true };

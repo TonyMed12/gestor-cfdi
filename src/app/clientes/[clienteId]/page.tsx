@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
-import { getArchivos, getCategoriasDeCliente, getCliente, getEnlaceEnvio, getPerfil } from "@/lib/datos";
+import { getArchivos, getCategoriasDeCliente, getCliente, getEnlaceEnvio, getPerfil, getResumenCategoriasCliente } from "@/lib/datos";
 import { dinero } from "@/lib/formato";
 import { CategoriasDelCliente, EditarCliente, ReconsultarMes } from "./AjustesCliente";
 import { EnlaceEnvio } from "./EnlaceEnvio";
@@ -41,6 +41,7 @@ export default async function ClienteDetallePage({
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   const archivos = await getArchivos(clienteId);
+  const resumen = await getResumenCategoriasCliente(clienteId);
   const perfil = await getPerfil();
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   // El token solo se entrega a quien puede regenerarlo; auxiliares no lo ven.
@@ -58,6 +59,41 @@ export default async function ClienteDetallePage({
           {cliente.rfc}
         </span>
       </header>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="m-0 text-lg font-semibold">Por categoría</h2>
+          <p className="m-0 text-sm text-text-muted">Solo facturas aprobadas. Es una versión preliminar del resumen del periodo.</p>
+        </div>
+        {resumen.length === 0 ? (
+          <p className="m-0 text-sm text-text-muted">Aún no hay facturas aprobadas para este cliente.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse text-[15px]">
+              <thead>
+                <tr className="text-left text-[13px] text-text-muted">
+                  <th className="py-2 font-semibold">Tipo</th>
+                  <th className="py-2 font-semibold">Categoría</th>
+                  <th className="py-2 text-right font-semibold">Facturas</th>
+                  <th className="py-2 text-right font-semibold">Subtotal</th>
+                  <th className="py-2 text-right font-semibold">IVA trasladado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resumen.map((f) => (
+                  <tr key={`${f.tipo}-${f.categoria}`} className="border-t border-[#EEF1F4]">
+                    <td className="py-2">{f.tipo}</td>
+                    <td className="py-2 font-semibold">{f.categoria}</td>
+                    <td className="py-2 text-right">{f.facturas}</td>
+                    <td className="py-2 text-right font-mono">{f.subtotal.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+                    <td className="py-2 text-right font-mono">{f.ivaTrasladado.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <SubirArchivos clienteId={cliente.id} />
 
@@ -133,7 +169,7 @@ export default async function ClienteDetallePage({
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex flex-col items-end gap-1.5">
-                        {a.tipo === "xml" || (a.tipo === "pdf" && a.factura) ? (
+                        {a.tipo === "xml" || a.tipo === "pdf" ? (
                           <Link href={`/clientes/${cliente.id}/archivos/${a.id}`} aria-label={`Ver ${a.nombre}`} className="text-sm font-semibold">
                             Ver
                           </Link>

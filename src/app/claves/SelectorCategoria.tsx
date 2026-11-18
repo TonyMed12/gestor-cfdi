@@ -51,7 +51,7 @@ export function SelectorCategoria({
         ))}
       </select>
       {sugerida && !error && (
-        <span className="text-[13px] text-text-muted">Sugerida por división del SAT. Confírmala o cámbiala.</span>
+        <span className="text-[13px] text-text-muted">Sugerida automáticamente. Confírmala o cámbiala.</span>
       )}
       {error && (
         <span role="alert" className="text-[13px] text-[#B42318]">

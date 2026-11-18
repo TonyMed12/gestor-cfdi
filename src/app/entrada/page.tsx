@@ -25,6 +25,7 @@ export default async function EntradaPage() {
       <SubidorXml
         enviar={subirAEntrada}
         etiqueta="Seleccionar archivos"
+        pista="Puedes elegir varios archivos a la vez."
         aceptar=".xml,.pdf,.jpg,.jpeg,.png,application/xml,text/xml,application/pdf,image/jpeg,image/png"
       />
 

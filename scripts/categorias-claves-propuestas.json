@@ -1,0 +1,2582 @@
+[
+ {
+  "clave": "14111500",
+  "descripcion": "Papel de imprenta y papel de escribir",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111501",
+  "descripcion": "Papel cebolla",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111502",
+  "descripcion": "Papel vitela",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111503",
+  "descripcion": "Papel pergamino",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111504",
+  "descripcion": "Papel en formas continuas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111505",
+  "descripcion": "Papel mimeógrafo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111506",
+  "descripcion": "Papel para impresión de computadores",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111507",
+  "descripcion": "Papel para impresora o fotocopiadora",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111508",
+  "descripcion": "Papel para fax",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111509",
+  "descripcion": "Papel membreteado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111510",
+  "descripcion": "Papel para plotter",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111511",
+  "descripcion": "Papel de escritura",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111512",
+  "descripcion": "Papel para gráficos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111513",
+  "descripcion": "Papel de libro",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111515",
+  "descripcion": "Papel para sumadora o máquina registradora",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111520",
+  "descripcion": "Papel secante",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111523",
+  "descripcion": "Papel calcante",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111524",
+  "descripcion": "Papel folio",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111525",
+  "descripcion": "Papel multipropósito",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111526",
+  "descripcion": "Papel libretas o libros de mensajes telefónicos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111527",
+  "descripcion": "Papel autocopiante",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111528",
+  "descripcion": "Papel magnético",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111530",
+  "descripcion": "Papel de notas autoadhesivas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111531",
+  "descripcion": "Papel libros o cuadernos para bitácoras",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111532",
+  "descripcion": "Papel kits de papeles surtidos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111533",
+  "descripcion": "Papel cuadernillos o formularios de exámenes",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111538",
+  "descripcion": "Papel digital",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111539",
+  "descripcion": "Papel de monitoreo o calcado o registro médico",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111540",
+  "descripcion": "Papel de estampilla",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111541",
+  "descripcion": "Papel lector de marcas ópticas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111542",
+  "descripcion": "Papel coreano para papelería",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111600",
+  "descripcion": "Papel fantasía",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111601",
+  "descripcion": "Papel o bolsas o cajas de regalo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111606",
+  "descripcion": "Papel para artes o artesanías",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111609",
+  "descripcion": "Papel de cubierta",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111610",
+  "descripcion": "Papel de construcción",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111613",
+  "descripcion": "Papel de pancartas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111614",
+  "descripcion": "Papel o tejidos de álbum",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111617",
+  "descripcion": "Papel leathack (verjurado)",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111618",
+  "descripcion": "Papel kent",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111704",
+  "descripcion": "Papel higiénico",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111818",
+  "descripcion": "Papel térmico",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14111828",
+  "descripcion": "Papelería comercial membreteada",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121504",
+  "descripcion": "Papel de empaque",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121507",
+  "descripcion": "Papel inhibidor de la corrosión volátil o vci",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121600",
+  "descripcion": "Papel de seda",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121601",
+  "descripcion": "Papel crepé sin blanquear",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121602",
+  "descripcion": "Papel crepé semi blanqueado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121806",
+  "descripcion": "Papel de parafinado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121807",
+  "descripcion": "Papel mantequilla",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121808",
+  "descripcion": "Papel para congelador",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121809",
+  "descripcion": "Papel de enmascarar",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121812",
+  "descripcion": "Papel de fotografía",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121900",
+  "descripcion": "Papel prensa y de offset",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121901",
+  "descripcion": "Papel periódico estándar",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121902",
+  "descripcion": "Papel periódico de colores",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121903",
+  "descripcion": "Papel periódico de alto brillo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14121904",
+  "descripcion": "Papel offset",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122101",
+  "descripcion": "Papel kraft súper calandrado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122102",
+  "descripcion": "Papel kraft terminado o satinado en máquina",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122103",
+  "descripcion": "Papel no recubierto no tratado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122104",
+  "descripcion": "Papel crepé no tratado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122105",
+  "descripcion": "Papel crepé tratado con látex",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122106",
+  "descripcion": "Papel no recubierto tratado con látex",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122107",
+  "descripcion": "Papel base corrugado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122201",
+  "descripcion": "Papel para germinación de semillas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "14122202",
+  "descripcion": "Papel para bolsas de te",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101504",
+  "descripcion": "Combustible de aviación",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101505",
+  "descripcion": "Combustible diésel",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101509",
+  "descripcion": "Combustible marítimo",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101513",
+  "descripcion": "Combustible diésel para uso fuera de carretera",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101514",
+  "descripcion": "Gasolina regular menor a 91 octanos",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15101515",
+  "descripcion": "Gasolina premium mayor o igual a 91 octanos",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "15131500",
+  "descripcion": "Combustible nuclear",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "26141601",
+  "descripcion": "Combustible para conjunto subcrítico",
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "27112153",
+  "descripcion": "Engrapadora de banda",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "30161502",
+  "descripcion": "Papel de colgadura",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "41102428",
+  "descripcion": "Papel altamente absorbente",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "41122603",
+  "descripcion": "Papel de lentes para microscopio",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "42203605",
+  "descripcion": "Software de sistema de archivo de película de rayos x para usos médicos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "42203705",
+  "descripcion": "Impresoras láser en seco para imágenes o reproductores de imágenes para uso médico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "42211703",
+  "descripcion": "Papel o plástico para escribir braille para los discapacitados físicamente",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43212105",
+  "descripcion": "Impresoras láser",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231500",
+  "descripcion": "Software funcional específico de la empresa",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231501",
+  "descripcion": "Software de mesa de ayuda o centro de llamadas (call center)",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231503",
+  "descripcion": "Software de adquisiciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231505",
+  "descripcion": "Software de recursos humanos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231506",
+  "descripcion": "Software de logística de planeación de requerimiento de materiales y cadena de suministros",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231507",
+  "descripcion": "Software de manejo de proyectos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231508",
+  "descripcion": "Software de manejo de inventarios",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231509",
+  "descripcion": "Software de barras de códigos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231510",
+  "descripcion": "Software para hacer etiquetas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231511",
+  "descripcion": "Software de sistemas expertos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231512",
+  "descripcion": "Software de manejo de licencias",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231513",
+  "descripcion": "Software para oficinas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231514",
+  "descripcion": "Software de ventas y mercadeo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231515",
+  "descripcion": "Software de envío y embarque",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231600",
+  "descripcion": "Software de planificación de recursos empresariales (ERP) y contabilidad financiera",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231601",
+  "descripcion": "Software de contabilidad",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231602",
+  "descripcion": "Software de planeación de recursos del negocio erp",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231603",
+  "descripcion": "Software de preparación tributaria",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231604",
+  "descripcion": "Software de análisis financiero",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43231605",
+  "descripcion": "Software de contabilidad de tiempo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232000",
+  "descripcion": "Software de entretenimiento o juegos de computador",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232004",
+  "descripcion": "Software familiar",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232005",
+  "descripcion": "Software de edición de música o sonido",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232100",
+  "descripcion": "Software de edición y creación de contenidos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232101",
+  "descripcion": "Software de diseño de patrones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232102",
+  "descripcion": "Software de imágenes gráficas o de fotografía",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232103",
+  "descripcion": "Software de creación y edición de video",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232104",
+  "descripcion": "Software de procesamiento de palabras",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232105",
+  "descripcion": "Software de gráficas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232106",
+  "descripcion": "Software de presentación",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232107",
+  "descripcion": "Software de creación y edición de páginas web",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232108",
+  "descripcion": "Software de calendario y programación de citas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232110",
+  "descripcion": "Software de hoja de cálculo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232111",
+  "descripcion": "Software de lector de caracteres ópticos ocr o de escáner",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232112",
+  "descripcion": "Software de autoedición",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232200",
+  "descripcion": "Software de gestión de contenidos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232201",
+  "descripcion": "Software de flujo de trabajo de contenido",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232202",
+  "descripcion": "Software de manejo de documentos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232203",
+  "descripcion": "Software de versiones de archivo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232204",
+  "descripcion": "Software de ingreso de texto incrustado",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232205",
+  "descripcion": "Software de tipos de letra",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232300",
+  "descripcion": "Software de consultas y gestión de datos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232301",
+  "descripcion": "Software de categorización o clasificación",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232302",
+  "descripcion": "Software de agrupamiento de recursos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232303",
+  "descripcion": "Software de manejo de relaciones con el cliente crm",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232304",
+  "descripcion": "Software de sistemas de manejo de base datos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232305",
+  "descripcion": "Software de reportes de bases de datos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232306",
+  "descripcion": "Software de interface y preguntas de usuario de base de datos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232307",
+  "descripcion": "Software de extracción de datos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232309",
+  "descripcion": "Software de recuperación o búsqueda de información",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232310",
+  "descripcion": "Software de manejo de metadata",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232311",
+  "descripcion": "Software de manejo de base de datos orientada al objeto",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232312",
+  "descripcion": "Software de servidor de portales",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232313",
+  "descripcion": "Software de servidor de transacciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232401",
+  "descripcion": "Software de manejo de configuraciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232402",
+  "descripcion": "Software de entorno de desarrollo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232403",
+  "descripcion": "Software de integración de aplicaciones de empresas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232404",
+  "descripcion": "Software de desarrollo de interface de usuario gráfica",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232405",
+  "descripcion": "Software de desarrollo orientado a objetos o componentes",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232406",
+  "descripcion": "Software de pruebas de programas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232407",
+  "descripcion": "Software de arquitectura de sistemas y análisis de requerimientos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232408",
+  "descripcion": "Software de desarrollo de plataformas web",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232409",
+  "descripcion": "Software para compilar y descompilar",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232500",
+  "descripcion": "Software educativo o de referencia",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232501",
+  "descripcion": "Software de idiomas extranjeros (traductores)",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232502",
+  "descripcion": "Software de entrenamiento basado en computadores",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232504",
+  "descripcion": "Software de navegación de rutas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232505",
+  "descripcion": "Software educacional multimedios",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232506",
+  "descripcion": "Software de enciclopedias",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232507",
+  "descripcion": "Software de diccionarios",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232508",
+  "descripcion": "Software de libretas de teléfonos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232600",
+  "descripcion": "Software específico para la industria",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232601",
+  "descripcion": "Software de soporte de aviación en tierra",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232602",
+  "descripcion": "Software de pruebas de aviación",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232603",
+  "descripcion": "Software de manejo de instalaciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232604",
+  "descripcion": "Software de diseño asistido de computador cad",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232605",
+  "descripcion": "Software analítico o científico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232606",
+  "descripcion": "Software de cumplimiento (compliance)",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232607",
+  "descripcion": "Software de control de vuelos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232608",
+  "descripcion": "Software de control industrial",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232609",
+  "descripcion": "Software de bibliotecas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232610",
+  "descripcion": "Software médico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232611",
+  "descripcion": "Software de puntos de venta pos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232612",
+  "descripcion": "Software de fabricación asistida por computador cam",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232613",
+  "descripcion": "Software de sistema de ejecución de fabricación mes",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232700",
+  "descripcion": "Software de aplicaciones de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232701",
+  "descripcion": "Software de servidor de aplicaciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232702",
+  "descripcion": "Software de comunicaciones de escritorio",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232703",
+  "descripcion": "Software de respuesta de voz interactiva",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232704",
+  "descripcion": "Software de servicios de directorio por internet",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232705",
+  "descripcion": "Software de navegador de internet",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232800",
+  "descripcion": "Software de administración de redes",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232801",
+  "descripcion": "Software de monitoreo de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232802",
+  "descripcion": "Software de optimización del sistema operativo de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232803",
+  "descripcion": "Software de manejo de red óptica",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232804",
+  "descripcion": "Software de administración",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232805",
+  "descripcion": "Software de subsistema de multimedia de protocolo de internet ip",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232900",
+  "descripcion": "Software para trabajo en redes",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232901",
+  "descripcion": "Software de acceso",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232902",
+  "descripcion": "Software de servidor de comunicaciones",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232903",
+  "descripcion": "Software de centro de contactos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232904",
+  "descripcion": "Software de fax",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232905",
+  "descripcion": "Software de lan",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232906",
+  "descripcion": "Software de multiplexor",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232907",
+  "descripcion": "Software de almacenamiento de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232908",
+  "descripcion": "Software de interruptor o enrutador",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232909",
+  "descripcion": "Software y firmware de interruptor wan",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232910",
+  "descripcion": "Software inalámbrico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232911",
+  "descripcion": "Software de emulación de terminal de conectividad de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232912",
+  "descripcion": "Software de puerta de acceso",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232913",
+  "descripcion": "Software de puente",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232914",
+  "descripcion": "Software de módem",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232915",
+  "descripcion": "Software de interconectividad de plataformas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43232916",
+  "descripcion": "Software irda de transferencia de información infrarrojo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233000",
+  "descripcion": "Software de entorno operativo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233001",
+  "descripcion": "Software de sistema de archivo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233002",
+  "descripcion": "Software de sistema de operación de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233004",
+  "descripcion": "Software de sistema operativo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233200",
+  "descripcion": "Software de seguridad y protección",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233201",
+  "descripcion": "Software de servidor de autenticación",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233203",
+  "descripcion": "Software de manejo de seguridad de red o de redes privadas virtuales vpn",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233204",
+  "descripcion": "Software de equipos de seguridad de red y de redes privadas virtuales vpn",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233205",
+  "descripcion": "Software de seguridad de transacciones y de protección contra virus",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233400",
+  "descripcion": "Software de controladores de dispositivos y utilidades",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233401",
+  "descripcion": "Software de servidor de discos compactos cd",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233402",
+  "descripcion": "Software de conversión de información",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233403",
+  "descripcion": "Software de compresión de información",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233404",
+  "descripcion": "Software discos compactos cd o dvd o tarjetas de sonido",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233405",
+  "descripcion": "Software de controladores o sistemas de dispositivos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233406",
+  "descripcion": "Software de controladores de ethernet",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233407",
+  "descripcion": "Software de controladores de tarjetas de gráficos",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233410",
+  "descripcion": "Software de controladores de impresoras",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233411",
+  "descripcion": "Software de protectores de pantalla",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233413",
+  "descripcion": "Software de reconocimiento de voz",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233414",
+  "descripcion": "Software de carga de almacenamiento de medios",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233415",
+  "descripcion": "Software de respaldo o archivo",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233420",
+  "descripcion": "Software de conversión de texto a voz",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233500",
+  "descripcion": "Software de intercambio de información",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233501",
+  "descripcion": "Software de correo electrónico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233502",
+  "descripcion": "Software de video conferencias",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233503",
+  "descripcion": "Software de conferencias de red",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233504",
+  "descripcion": "Software de mensajería instantánea",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233505",
+  "descripcion": "Software de música ambiental o publicidad para mensajería",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233506",
+  "descripcion": "Software de creación de mapas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233507",
+  "descripcion": "Software estándar específico para operadores de móviles",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233508",
+  "descripcion": "Software de aplicación específica para operadores de móviles",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233509",
+  "descripcion": "Software de servicios de mensajería para móviles",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233510",
+  "descripcion": "Software de servicios de internet para móviles",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233511",
+  "descripcion": "Software de servicios basados en ubicación para móviles",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233512",
+  "descripcion": "Software de tonos de timbre",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233600",
+  "descripcion": "Software de equipo eléctrico",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233601",
+  "descripcion": "Software de controlador del motor",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233602",
+  "descripcion": "Software de monitor de energía",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233603",
+  "descripcion": "Software de control lógico programable",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233700",
+  "descripcion": "Software de administración de sistemas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "43233701",
+  "descripcion": "Software de manejo de sistemas de empresas",
+  "categoria": "Equipo de cómputo y software",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44103103",
+  "descripcion": "Tóner para impresoras o fax",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44103119",
+  "descripcion": "Papel de transferencia en caliente para copiadoras",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44121701",
+  "descripcion": "Bolígrafos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44122011",
+  "descripcion": "Folders",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44122017",
+  "descripcion": "Folders de colgar o accesorios",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44122027",
+  "descripcion": "Folders de archivo expandibles",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44122029",
+  "descripcion": "Folders de clasificación",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "44122032",
+  "descripcion": "Folders de conferencias",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "46171634",
+  "descripcion": "Papel detector de agentes químicos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "48102108",
+  "descripcion": "Papel aluminio para envolver alimentos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "48102109",
+  "descripcion": "Papel plástico para envolver alimentos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "50211607",
+  "descripcion": "Papel para cigarrillos o filtros",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "52152201",
+  "descripcion": "Papel para forrar repisas",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "53141613",
+  "descripcion": "Papel calcante",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60105703",
+  "descripcion": "Papel para álbumes de recuerdos",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121101",
+  "descripcion": "Papel para dibujo de sulfito",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121102",
+  "descripcion": "Papel para dibujo de pasta de madera triturada",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121103",
+  "descripcion": "Papel para dibujo de calcar o pergamino",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121104",
+  "descripcion": "Papel bond para para dibujo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121105",
+  "descripcion": "Papel de dibujo para carboncillo o pastel",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121106",
+  "descripcion": "Papel brístol para dibujo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121110",
+  "descripcion": "Papel para pintura dactilar",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121116",
+  "descripcion": "Papel crepé para manualidades",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121117",
+  "descripcion": "Papel de seda para manualidades",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121118",
+  "descripcion": "Papel corrugado para manualidades",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121119",
+  "descripcion": "Papel con impresión de patrones para manualidades",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121120",
+  "descripcion": "Papel para manualidades autoadhesivo",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121121",
+  "descripcion": "Papel fluorescente",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121123",
+  "descripcion": "Papel hecho a mano",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121124",
+  "descripcion": "Papel kraft",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121131",
+  "descripcion": "Papel japonés para grabado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121132",
+  "descripcion": "Papel para grabado para huecograbado o litografía",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121133",
+  "descripcion": "Papel para grabado para impresión xilográfica",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121134",
+  "descripcion": "Papel metálico",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121147",
+  "descripcion": "Papel brillante",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121149",
+  "descripcion": "Papel vegetal prensado",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121150",
+  "descripcion": "Papel de construcción",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121522",
+  "descripcion": "Bolígrafos de base acuosa",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121523",
+  "descripcion": "Bolígrafos permanentes",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121524",
+  "descripcion": "Bolígrafos de gel",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60121526",
+  "descripcion": "Bolígrafos para caligrafía",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "60124318",
+  "descripcion": "Papel maché",
+  "categoria": "Gastos de oficina y papelería",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "70111705",
+  "descripcion": "Servicios de mantenimiento de cementerios",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "70111706",
+  "descripcion": "Servicios de mantenimiento del césped",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "70111707",
+  "descripcion": "Servicio de mantenimiento del césped en las carreteras",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "70171702",
+  "descripcion": "Servicios de mantenimiento o administración de represas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71101710",
+  "descripcion": "Servicio de alquiler o leasing de maquinaria para minería",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71121307",
+  "descripcion": "Servicios de reparación de herramientas de perforación en el fondo del pozo",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71121405",
+  "descripcion": "Servicios de reparación de brocas de perforación del campo petrolero",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71121639",
+  "descripcion": "Servicio de alquiler de tubería de perforación en el fondo del pozo",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122306",
+  "descripcion": "Servicios de mantenimiento de equipo del pozo submarino",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122700",
+  "descripcion": "Servicios de mantenimiento del pozo",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122701",
+  "descripcion": "Servicios de mantenimiento de la plataforma de pozos petroleros",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122702",
+  "descripcion": "Servicios de mantenimiento de la unidad de bombeo del campo petrolero",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122703",
+  "descripcion": "Servicios de reparación de bomba de vástago del campo petrolero",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122705",
+  "descripcion": "Servicios de mantenimiento vástago de succión del campo petrolero",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122709",
+  "descripcion": "Servicio de mantenimiento de herramientas en el fondo del pozo",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "71122710",
+  "descripcion": "Servicios de mantenimiento de tubos del campo petrolero",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72101506",
+  "descripcion": "Servicios de mantenimiento de ascensores",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72101507",
+  "descripcion": "Servicio de mantenimiento de edificios",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72101509",
+  "descripcion": "Servicio de mantenimiento o reparación de equipos y sistemas de protección contra incendios",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72101517",
+  "descripcion": "Servicio de mantenimiento o reparación de generadores portátiles",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72101518",
+  "descripcion": "Servicio de alquiler de generadores portátiles",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72102900",
+  "descripcion": "Servicios de mantenimiento y reparación de instalaciones",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72103300",
+  "descripcion": "Servicios de mantenimiento y reparación de infraestructura",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72111001",
+  "descripcion": "Servicios de reparación o ampliación por remodelación de viviendas unifamiliares",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72111003",
+  "descripcion": "Servicio de reparación de casas móviles en el sitio",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72111005",
+  "descripcion": "Servicio de reparación por daños ocasionados por fuego de viviendas unifamiliares",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72141003",
+  "descripcion": "Servicio de mantenimiento de calles y carreteras",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72141700",
+  "descripcion": "Servicios de alquiler o arrendamiento de equipo y maquinaria de construcción",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72141701",
+  "descripcion": "Servicio de alquiler o leasing de maquinaria para construcción",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72141702",
+  "descripcion": "Servicio de alquiler o leasing de equipo para construcción",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151001",
+  "descripcion": "Servicio de mantenimiento de calderas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151003",
+  "descripcion": "Servicio de mantenimiento y reparación de sistemas de calefacción",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151004",
+  "descripcion": "Servicio de mantenimiento y reparación de sistemas de calefacción por agua caliente",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151511",
+  "descripcion": "Servicio de mantenimiento o reparación de sistemas de iluminación",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151514",
+  "descripcion": "Servicio de mantenimiento de energía de emergencia o de reserva",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151608",
+  "descripcion": "Servicio de mantenimiento o reparación de sistemas satelitales",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72151800",
+  "descripcion": "Servicios de mantenimiento y reparación de instalación de máquinas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72153300",
+  "descripcion": "Servicios de mantenimiento e instalación de equipo de estación de servicio",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72153303",
+  "descripcion": "Servicio de mantenimiento o reparación de equipos de estaciones de servicio",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72153613",
+  "descripcion": "Servicio de alquiler y mantenimiento de mobiliario para oficina",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154050",
+  "descripcion": "Servicio de mantenimiento o reparación de carritos de la compra",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154053",
+  "descripcion": "Servicio de reparación de emisoras",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154056",
+  "descripcion": "Servicio de mantenimiento o reparación de tanques",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154057",
+  "descripcion": "Servicio de alquiler de tanques de almacenamiento",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154064",
+  "descripcion": "Servicio de alquiler de equipos portátiles para iluminación",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154100",
+  "descripcion": "Servicios de mantenimiento y reparación de equipo de sistemas de distribución y acondicionamiento",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154101",
+  "descripcion": "Servicio de alquiler y mantenimiento de compresores de aire",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154102",
+  "descripcion": "Servicio de mantenimiento o reparación de intercambiadores de calor",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154103",
+  "descripcion": "Servicio de mantenimiento o reparación de bombas rotativas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154104",
+  "descripcion": "Servicio de mantenimiento y reparación de cajas de cambios",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154105",
+  "descripcion": "Servicio de mantenimiento y reparación de válvulas de control",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154106",
+  "descripcion": "Servicio de alquiler y mantenimiento de compresores alternativos",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154107",
+  "descripcion": "Servicio de alquiler y mantenimiento de compresores centrífugos",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154108",
+  "descripcion": "Servicio de mantenimiento o reparación de bombas alternativas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154109",
+  "descripcion": "Servicio de mantenimiento o reparación de bombas centrífugas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154110",
+  "descripcion": "Servicio de mantenimiento y reparación de torres de refrigeración con ventilador de aletas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154200",
+  "descripcion": "Servicios de mantenimiento y reparación de instalación de instrumentación",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154300",
+  "descripcion": "Servicios de mantenimiento y reparación de equipo motivo y generación de energía eléctrica",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154301",
+  "descripcion": "Servicio de mantenimiento o reparación de equipos de turbina",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154400",
+  "descripcion": "Servicios de mantenimiento y fabricación de accesorios para tuberías",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154402",
+  "descripcion": "Servicio de mantenimiento o reparación de accesorios para tuberías",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154500",
+  "descripcion": "Servicios de mantenimiento e instalación de equipo pesado",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154501",
+  "descripcion": "Servicio de mantenimiento y reparación de equipo pesado",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154502",
+  "descripcion": "Servicio de mantenimiento y reparación de grúas",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "72154503",
+  "descripcion": "Servicio de alquiler de grúas",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152100",
+  "descripcion": "Servicios de mantenimiento y reparación de equipo de manufactura",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152101",
+  "descripcion": "Servicio de mantenimiento de equipo industrial",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152102",
+  "descripcion": "Servicio de reparación de equipo industrial",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152103",
+  "descripcion": "Servicios de mantenimiento de equipos de ingeniería",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152104",
+  "descripcion": "Servicio de mantenimiento y reparación de equipos para empacar",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152106",
+  "descripcion": "Servicio de mantenimiento y reparación de equipos para calentar y hornear",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152108",
+  "descripcion": "Servicio de mantenimiento y reparación de equipos eléctricos",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "73152109",
+  "descripcion": "Servicios de mantenimiento y alquiler de básculas industriales",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "76111503",
+  "descripcion": "Servicios de mantenimiento del alumbrado",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "76122400",
+  "descripcion": "Honorarios de disposición y tratamiento de basuras",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78101605",
+  "descripcion": "Servicio de alquiler de carrotanques de ferrocarril",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78101606",
+  "descripcion": "Servicio de alquiler de furgones de ferrocarril o carros de carga",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78101805",
+  "descripcion": "Servicio de alquiler de remolques o camiones cisterna",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78111505",
+  "descripcion": "Servicio de alquiler o arrendamiento de aeronaves de pasajeros",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78111704",
+  "descripcion": "Servicio de alquiler o leasing de embarcaciones marinas",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78141900",
+  "descripcion": "Servicios de alquiler de contenedores de transporte",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78141901",
+  "descripcion": "Servicios de alquiler de canastas de almacenamiento",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78181500",
+  "descripcion": "Servicios de mantenimiento y reparación de vehículos",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78181800",
+  "descripcion": "Servicios de mantenimiento y reparación de aeronaves",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "78181900",
+  "descripcion": "Servicios de mantenimiento y reparación de equipo de navegación",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121501",
+  "descripcion": "Servicios legales de justicia juvenil o de adolescentes",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121601",
+  "descripcion": "Servicios legales sobre competencia o regulaciones gubernamentales",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121602",
+  "descripcion": "Servicios legales de quiebra",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121610",
+  "descripcion": "Servicios legales de cobro de deudas o cartera.",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121701",
+  "descripcion": "Servicios legales de malpraxis o negligencia profesional",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121702",
+  "descripcion": "Servicios legales sobre daños a personas",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121703",
+  "descripcion": "Servicios legales de sobre la  propiedad",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121704",
+  "descripcion": "Servicios legales sobre contratos",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121705",
+  "descripcion": "Servicios legales sobre beneficios de los empleados",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121706",
+  "descripcion": "Servicios legales sobre derecho laboral",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121707",
+  "descripcion": "Servicios legales para disputas laborales",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121802",
+  "descripcion": "Servicios legales para adopción",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80121804",
+  "descripcion": "Servicios legales para tutorías o de custodia",
+  "categoria": "Honorarios y servicios profesionales",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80161800",
+  "descripcion": "Servicios de alquiler o arrendamiento de equipo de oficina",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "80161801",
+  "descripcion": "Servicio de alquiler o leasing de fotocopiadoras",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81111812",
+  "descripcion": "Servicio de mantenimiento o soporte del hardware del computador",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81112100",
+  "descripcion": "Servicios de internet",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81112221",
+  "descripcion": "Servicio de mantenimiento del software del punto de venta",
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81112400",
+  "descripcion": "Servicios de alquiler o arrendamiento de hardware de computador",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81112500",
+  "descripcion": "Servicios de alquiler o arrendamiento de licencias de software de computador",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81161700",
+  "descripcion": "Servicios de telecomunicaciones",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "81161800",
+  "descripcion": "Servicios de alquiler o arrendamiento de equipos o plataformas de voz y datos o multimedia",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101500",
+  "descripcion": "Publicidad impresa",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101501",
+  "descripcion": "Publicidad en vallas",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101502",
+  "descripcion": "Publicidad en afiches",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101503",
+  "descripcion": "Publicidad en revistas",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101504",
+  "descripcion": "Publicidad en periódicos",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101505",
+  "descripcion": "Publicidad en volantes o cupones",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101506",
+  "descripcion": "Servicios de publicidad en transporte público",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101508",
+  "descripcion": "Publicidad en páginas amarillas o en directorios comerciales o de servicios",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101600",
+  "descripcion": "Publicidad difundida",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101601",
+  "descripcion": "Publicidad en radio",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101602",
+  "descripcion": "Publicidad en televisión",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101603",
+  "descripcion": "Publicidad en internet",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101604",
+  "descripcion": "Publicidad en los cines",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101700",
+  "descripcion": "Publicidad aérea",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101701",
+  "descripcion": "Servicios de publicidad en pancartas",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "82101702",
+  "descripcion": "Servicios de publicidad aérea",
+  "categoria": "Publicidad y marketing",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "83111501",
+  "descripcion": "Servicio de telefonía local",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "83111511",
+  "descripcion": "Servicio de telecomunicaciones de retransmisión en trama",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "83111603",
+  "descripcion": "Servicios de telefonía celular",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "83112300",
+  "descripcion": "Servicios de telecomunicaciones por fibra",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "83112400",
+  "descripcion": "Servicios de telecomunicaciones de marcado conmutado y circuito de línea dedicada alquilada",
+  "categoria": "Servicios (luz, agua, internet, teléfono)",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131500",
+  "descripcion": "Servicios de seguros para estructuras y propiedades y posesiones",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131501",
+  "descripcion": "Seguros de edificios o del contenido de edificios",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131502",
+  "descripcion": "Seguros de propietarios de casa o rentistas",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131503",
+  "descripcion": "Seguro de automóviles o camiones",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131504",
+  "descripcion": "Seguros de carga",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131507",
+  "descripcion": "Seguro de interrupción de los procesos de negocios",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131508",
+  "descripcion": "Seguro de aportación de dinero durante el viaje",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131511",
+  "descripcion": "Seguro de deterioro de valores",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131512",
+  "descripcion": "Seguro de equipos electrónicos",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131514",
+  "descripcion": "Seguro de garantía de fidelidad",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131516",
+  "descripcion": "Seguro de indemnización profesional",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131517",
+  "descripcion": "Seguro de viaje",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131601",
+  "descripcion": "Seguros de vida",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131602",
+  "descripcion": "Seguros de asistencia médica y hospitalización",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131603",
+  "descripcion": "Seguros de daños personales por accidente",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131604",
+  "descripcion": "Seguro de invalidez",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131605",
+  "descripcion": "Seguro de accidentes de trabajo",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131606",
+  "descripcion": "Seguros de desempleo",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "84131607",
+  "descripcion": "Seguro de responsabilidad civil",
+  "categoria": "Seguros",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "90111504",
+  "descripcion": "Servicios de alquiler de cabañas",
+  "categoria": "Renta de local o equipo",
+  "origen": "palabra clave"
+ },
+ {
+  "clave": "93141901",
+  "descripcion": "Servicios bancarios comerciales agrícolas",
+  "categoria": "Comisiones bancarias",
+  "origen": "palabra clave"
+ }
+]

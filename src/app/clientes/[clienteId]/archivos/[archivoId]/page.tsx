@@ -11,6 +11,7 @@ import {
   getArchivoParaVer, getCliente, getDescripcionesSat, getHistorialArchivo, getPerfil, getRelacionesArchivo,
 } from "@/lib/datos";
 import { VerArchivo } from "../../VerArchivo";
+import { ReprocesarPdf } from "./ReprocesarPdf";
 import { BotonSat } from "./BotonSat";
 
 export const metadata = { title: `Detalle del CFDI · ${NOMBRE_APP}` };
@@ -110,8 +111,9 @@ export default async function DetalleArchivoPage({
       )}
 
       {!d ? (
-        <div role="alert" className="rounded-xl border border-border bg-surface px-5 py-6 text-[15px]">
-          No se puede mostrar el resumen: {"error" in detalle ? detalle.error : ""}.
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-border bg-surface px-5 py-6 text-[15px]">
+          <span>No se puede mostrar el resumen: {"error" in detalle ? detalle.error : ""}.</span>
+          {esPdf && <ReprocesarPdf archivoId={archivo.id} />}
         </div>
       ) : (
         <article className="flex flex-col gap-6 rounded-2xl border border-border bg-surface p-6 md:p-8">

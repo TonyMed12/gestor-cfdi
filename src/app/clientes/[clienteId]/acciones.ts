@@ -472,7 +472,7 @@ export async function subirAEntrada(
     return { resultados: [], error: "No tienes permiso para subir facturas." };
   }
 
-  const archivos = formData.getAll("archivos").filter((x): x is File => x instanceof File).slice(0, 20);
+  const archivos = formData.getAll("archivos").filter((x): x is File => x instanceof File);
   if (archivos.length === 0) return { resultados: [], error: "Elige al menos un archivo XML." };
 
   const admin = supabaseAdmin();
@@ -654,4 +654,47 @@ export async function reconsultarMesActual(clienteId: string): Promise<{ ok: boo
     ok: true,
     texto: `Se consultaron ${facturas?.length ?? 0} facturas del mes. Canceladas: ${count ?? 0}. Sin respuesta del SAT: ${sinRespuesta}.`,
   };
+}
+
+// PDF o foto subidos desde la ficha del cliente: se leen igual que en la bandeja de entrada.
+// Si el PDF es una factura del cliente, queda como factura (con consulta al SAT). Si no, queda por revisar.
+export async function procesarDocumentoArchivo(archivoId: string): Promise<{ ok: boolean; texto: string }> {
+  const supabase = await supabaseServidor();
+  const { data: archivo } = await supabase
+    .from("archivo").select("id, cliente_id, tipo, ruta_original, estado")
+    .eq("id", archivoId).maybeSingle();
+  if (!archivo || (archivo.tipo !== "pdf" && archivo.tipo !== "imagen") || archivo.estado !== "recibido") {
+    return { ok: false, texto: "El archivo no está disponible para leerse" };
+  }
+  const { data: cliente } = await supabase.from("clientes").select("rfc").eq("id", archivo.cliente_id).maybeSingle();
+  if (!cliente) return { ok: false, texto: "No se encontró el cliente" };
+  const admin = supabaseAdmin();
+  const { data: descarga } = await admin.storage.from("facturas").download(archivo.ruta_original);
+  if (!descarga) return { ok: false, texto: "No se pudo abrir el archivo" };
+  const bytes = new Uint8Array(await descarga.arrayBuffer());
+
+  try {
+    if (archivo.tipo === "pdf") {
+      const pdf = await import("@/lib/pdf");
+      const leido = pdf.leerFacturaPdf(await pdf.leerTextoPdf(bytes));
+      if (!("error" in leido)) {
+        const rfc = cliente.rfc.toUpperCase();
+        if (leido.factura.rfc_emisor.toUpperCase() !== rfc && leido.factura.rfc_receptor.toUpperCase() !== rfc) {
+          await admin.from("archivo").update({ estado: "error", motivo_error: "El RFC del cliente no aparece en el PDF" }).eq("id", archivoId);
+          await registrarHistorial(archivoId, "error", "El RFC del cliente no aparece en el PDF");
+          return { ok: false, texto: "El RFC del cliente no aparece en el PDF" };
+        }
+        const r = await guardarFacturaDePdf(archivoId, archivo.cliente_id, cliente.rfc, leido);
+        revalidatePath(`/clientes/${archivo.cliente_id}`);
+        return { ok: r.bien, texto: r.texto };
+      }
+    }
+    // Las fotos desde la ficha del cliente quedan para revisión; el OCR corre en la bandeja de entrada.
+  } catch {
+    // si no se pudo leer como factura, queda como documento para revisar
+  }
+  await admin.from("archivo").update({ estado: "por_revisar" }).eq("id", archivoId);
+  await registrarHistorial(archivoId, "por_revisar", "Documento para revisar");
+  revalidatePath(`/clientes/${archivo.cliente_id}`);
+  return { ok: true, texto: "Guardado para revisión" };
 }

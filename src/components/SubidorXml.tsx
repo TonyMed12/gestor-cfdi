@@ -9,10 +9,12 @@ export function SubidorXml({
   enviar,
   etiqueta = "Seleccionar archivos XML",
   aceptar = ".xml,application/xml,text/xml",
+  pista = "Hasta 20 archivos.",
 }: {
   enviar: (datos: FormData) => Promise<Respuesta>;
   etiqueta?: string;
   aceptar?: string;
+  pista?: string;
 }) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
@@ -55,7 +57,7 @@ export function SubidorXml({
         </label>
         <p className="m-0 text-sm text-text-muted">
           {seleccion.length === 0
-            ? "Hasta 20 archivos."
+            ? pista
             : `${seleccion.length} ${seleccion.length === 1 ? "archivo seleccionado" : "archivos seleccionados"}`}
         </p>
         {seleccion.length > 0 && (

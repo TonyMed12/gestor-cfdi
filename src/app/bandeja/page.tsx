@@ -29,7 +29,7 @@ export default async function BandejaPage({ searchParams }: { searchParams: Prom
   const facturas = tipoActivo ? todas.filter((f) => f.tipoComprobante === tipoActivo) : todas;
   const porIa = facturas.filter((f) => f.origenClasificacion === "ia").length;
   const porRegla = facturas.filter(
-    (f) => f.origenClasificacion === "regla" || f.origenClasificacion === "emisor",
+    (f) => f.origenClasificacion === "regla" || f.origenClasificacion === "emisor" || f.origenClasificacion === "base",
   ).length;
 
   return (
@@ -173,6 +173,10 @@ export default async function BandejaPage({ searchParams }: { searchParams: Prom
                   ) : f.origenClasificacion === "emisor" ? (
                     <span className="text-[13px] text-[#374151]">
                       Regla por emisor
+                    </span>
+                  ) : f.origenClasificacion === "base" ? (
+                    <span className="text-[13px] text-[#374151]">
+                      Regla base (palabra clave)
                     </span>
                   ) : f.origenClasificacion === "regla" ? (
                     <span className="text-[13px] text-[#374151]">
