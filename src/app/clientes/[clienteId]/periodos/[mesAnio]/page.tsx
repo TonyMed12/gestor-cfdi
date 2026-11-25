@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { Paginacion } from "@/components/Paginacion";
 import { TablaFacturas } from "@/components/TablaFacturas";
 import { NOMBRE_APP } from "@/lib/config";
 import { getCliente, getPerfil, getPeriodoCliente } from "@/lib/datos";
 import { esMesAnio, nombreMes } from "@/lib/formato";
+import { leerPagina } from "@/lib/paginacion";
 import { ReconsultarPeriodo } from "../../AjustesCliente";
 
 type Parametros = { params: Promise<{ clienteId: string; mesAnio: string }> };
@@ -17,14 +19,19 @@ export async function generateMetadata({ params }: Parametros) {
 }
 
 // Un periodo del cliente (C2): su estado, cuántas facturas tiene en cada estado de revisión y la lista de facturas.
-export default async function PeriodoClientePage({ params }: Parametros) {
+export default async function PeriodoClientePage({
+  params,
+  searchParams,
+}: Parametros & { searchParams: Promise<{ pagina?: string }> }) {
   const { clienteId, mesAnio } = await params;
   if (!esMesAnio(mesAnio)) notFound();
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
-  const [datos, perfil] = await Promise.all([getPeriodoCliente(cliente.id, mesAnio), getPerfil()]);
+  const { pagina: paginaPedida } = await searchParams;
+  // B4: las facturas van de 50 en 50; los conteos son de todo el periodo.
+  const [datos, perfil] = await Promise.all([getPeriodoCliente(cliente.id, mesAnio, leerPagina(paginaPedida)), getPerfil()]);
   if (!datos) notFound();
-  const { periodo, facturas } = datos;
+  const { periodo, facturas, pagina } = datos;
   // Solo administrador y contador actualizan facturas (RLS); el auxiliar no ve la consulta al SAT.
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
 
@@ -85,7 +92,10 @@ export default async function PeriodoClientePage({ params }: Parametros) {
           </p>
         </div>
         {facturas.length > 0 ? (
-          <TablaFacturas facturas={facturas} mostrarCliente={false} />
+          <>
+            <TablaFacturas facturas={facturas} mostrarCliente={false} />
+            <Paginacion ruta={`/clientes/${cliente.id}/periodos/${periodo.mesAnio}`} pagina={pagina} />
+          </>
         ) : (
           <p className="m-0 px-5 py-8 text-center text-sm text-text-muted">Este periodo no tiene facturas.</p>
         )}

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { BuscadorUuid, ResultadosUuid } from "@/components/BuscadorUuid";
+import { Paginacion } from "@/components/Paginacion";
 import { interpretarBusquedaUuid } from "@/lib/busqueda";
+import { leerPagina } from "@/lib/paginacion";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
 import {
@@ -49,10 +51,10 @@ export default async function ClienteDetallePage({
   searchParams,
 }: {
   params: Promise<{ clienteId: string }>;
-  searchParams: Promise<{ uuid?: string }>;
+  searchParams: Promise<{ uuid?: string; pagina?: string }>;
 }) {
   const { clienteId } = await params;
-  const { uuid } = await searchParams;
+  const { uuid, pagina } = await searchParams;
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   // Búsqueda por folio fiscal (B1), solo entre las facturas de este cliente.
@@ -60,7 +62,8 @@ export default async function ClienteDetallePage({
   const busqueda = interpretarBusquedaUuid(textoBusqueda);
   const buscando = busqueda.tipo === "completo" || busqueda.tipo === "fragmento";
   const resultadosUuid = buscando ? await buscarFacturasPorUuid(busqueda, cliente.id) : [];
-  const archivos = await getArchivos(clienteId);
+  // B4: de 50 en 50, los más recientes primero.
+  const { archivos, pagina: paginaArchivos } = await getArchivos(clienteId, leerPagina(pagina));
   const resumen = await getResumenCategoriasCliente(clienteId);
   const perfil = await getPerfil();
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
@@ -179,6 +182,7 @@ export default async function ClienteDetallePage({
             />
           </div>
         ) : (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-[15px]">
             <thead>
@@ -247,6 +251,8 @@ export default async function ClienteDetallePage({
             </p>
           )}
         </div>
+        <Paginacion ruta={`/clientes/${cliente.id}`} pagina={paginaArchivos} ancla="archivos" nombre="archivos" />
+        </>
         )}
       </section>
     </AppShell>

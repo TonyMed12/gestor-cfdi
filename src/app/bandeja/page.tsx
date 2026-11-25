@@ -2,7 +2,9 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { BuscadorUuid, ResultadosUuid } from "@/components/BuscadorUuid";
+import { Paginacion } from "@/components/Paginacion";
 import { interpretarBusquedaUuid } from "@/lib/busqueda";
+import { leerPagina } from "@/lib/paginacion";
 import { NOMBRE_APP } from "@/lib/config";
 import { buscarFacturasPorUuid, getFacturasPorRevisar, getPerfil, LIMITE_RESULTADOS_UUID } from "@/lib/datos";
 import { getPeriodoActual } from "@/lib/mock-data";
@@ -28,9 +30,9 @@ const TIPOS = [
 export default async function BandejaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; uuid?: string }>;
+  searchParams: Promise<{ tipo?: string; uuid?: string; pagina?: string }>;
 }) {
-  const { tipo, uuid } = await searchParams;
+  const { tipo, uuid, pagina } = await searchParams;
   const textoBusqueda = (uuid ?? "").trim();
   const busqueda = interpretarBusquedaUuid(textoBusqueda);
   const buscador = (
@@ -57,14 +59,14 @@ export default async function BandejaPage({
   }
 
   const tipoActivo = TIPOS.some((t) => t.codigo === tipo) ? (tipo ?? "") : "";
-  const [todas, perfil] = await Promise.all([getFacturasPorRevisar(), getPerfil()]);
+  // B4: de 50 en 50, ordenadas por prioridad entre todas las pendientes (no solo dentro de la página).
+  const [bandeja, perfil] = await Promise.all([
+    getFacturasPorRevisar({ tipo: tipoActivo || undefined, pagina: leerPagina(pagina) }),
+    getPerfil(),
+  ]);
   // Solo administrador y contador aprueban (RN-05); el auxiliar ve la bandeja sin casillas.
   const puedeDecidir = perfil?.rol === "administrador" || perfil?.rol === "contador";
-  const facturas = tipoActivo ? todas.filter((f) => f.tipoComprobante === tipoActivo) : todas;
-  const porIa = facturas.filter((f) => f.origenClasificacion === "ia").length;
-  const porRegla = facturas.filter(
-    (f) => f.origenClasificacion === "regla" || f.origenClasificacion === "emisor" || f.origenClasificacion === "base",
-  ).length;
+  const { facturas, porIa, porRegla } = bandeja;
 
   return (
     <AppShell active="/bandeja">
@@ -108,7 +110,7 @@ export default async function BandejaPage({
             aria-selected="true"
             className="h-10 rounded-full border border-accent bg-accent px-3.5 text-sm font-semibold text-white"
           >
-            Todas · {facturas.length}
+            Todas · {bandeja.pagina.total}
           </button>
           <button
             type="button"
@@ -142,7 +144,7 @@ export default async function BandejaPage({
             <tr className="text-left text-[13px] text-text-muted">
               {puedeDecidir && facturas.length > 0 && (
                 <th className="w-12 py-3.5 pl-5">
-                  <input type="checkbox" name="todas" aria-label="Seleccionar todas las facturas" className="h-4 w-4" />
+                  <input type="checkbox" name="todas" aria-label="Seleccionar todas las facturas de esta página" className="h-4 w-4" />
                 </th>
               )}
               <th className={`${puedeDecidir && facturas.length > 0 ? "px-3" : "px-5"} py-3.5 font-semibold`}>Prioridad</th>
@@ -265,6 +267,7 @@ export default async function BandejaPage({
           </p>
         )}
       </section>
+      <Paginacion ruta="/bandeja" parametros={{ tipo: tipoActivo || undefined }} pagina={bandeja.pagina} />
       </AprobacionEnLote>
       <p className="m-0 text-sm text-text-muted">
         Cada concepto se clasifica en este orden: clave asignada a mano,

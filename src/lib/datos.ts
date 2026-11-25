@@ -1,4 +1,5 @@
-import type { Cliente, Concepto, Factura, Impuesto } from "./types";
+import type { Cliente, Concepto, Factura, Impuesto, OrigenClasificacion } from "./types";
+import { describirPagina, paginaDe, rangoDePagina, type Pagina } from "./paginacion";
 import { supabaseServidor } from "./supabase-servidor";
 import { supabaseAdmin } from "./supabase-admin";
 import {
@@ -103,16 +104,30 @@ type FilaFactura = {
 const unaFila = <T>(relacion: T | T[] | null | undefined): T | null =>
   Array.isArray(relacion) ? (relacion[0] ?? null) : (relacion ?? null);
 
-export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> {
+// Archivos del cliente, de 50 en 50 (B4): la base devuelve solo la página y el total.
+export async function getArchivos(clienteId: string, paginaPedida = 1): Promise<{ archivos: ArchivoCliente[]; pagina: Pagina }> {
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase
+  const { desde, hasta } = rangoDePagina(Math.max(1, paginaPedida));
+  const { data, error, count } = await supabase
     .from("archivo")
     .select(
       "id, tipo, estado, ruta_original, recibido_en, motivo_error, factura(uuid_fiscal, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, total, moneda, estado_sat)",
+      { count: "exact" },
     )
     .eq("cliente_id", clienteId)
-    .order("recibido_en", { ascending: false });
+    .order("recibido_en", { ascending: false })
+    .order("id")
+    .range(desde, hasta);
   if (error) throw new Error(`No se pudieron leer los archivos: ${error.message}`);
+  return { archivos: aArchivos(data as unknown as FilaArchivo[]), pagina: describirPagina(paginaPedida, count ?? 0) };
+}
+
+type FilaArchivo = {
+  id: string; tipo: string; estado: string; ruta_original: string; recibido_en: string; motivo_error: string | null;
+  factura: FilaFactura | FilaFactura[] | null;
+};
+
+const aArchivos = (data: FilaArchivo[]): ArchivoCliente[] => {
   return data.map((a) => {
     const f = unaFila(a.factura as FilaFactura | FilaFactura[] | null);
     return {
@@ -133,9 +148,9 @@ export async function getArchivos(clienteId: string): Promise<ArchivoCliente[]> 
       },
     };
   });
-}
+};
 
-type FilaSat = { estado_sat: string | null; fecha_consulta_sat: string | null };
+type FilaSat ={ estado_sat: string | null; fecha_consulta_sat: string | null };
 
 // Archivo de un cliente y su contenido original (el XML tal como se subió).
 export async function getArchivoParaVer(clienteId: string, archivoId: string) {
@@ -278,42 +293,119 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
   ),
 });
 
-export async function getFacturasPorRevisar(): Promise<Factura[]> {
+export type PaginaBandeja = { facturas: Factura[]; pagina: Pagina; porIa: number; porRegla: number };
+
+// Bandeja de revisión (RF-31) ordenada por prioridad y paginada de 50 en 50 (B4). `tipo` filtra por tipo de comprobante.
+export async function getFacturasPorRevisar(opciones: { tipo?: string; pagina?: number } = {}): Promise<PaginaBandeja> {
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase
+  const { tipo, pagina: paginaPedida = 1 } = opciones;
+
+  // 1) Todas las pendientes, pero solo lo necesario para ordenarlas por prioridad: claves de sus conceptos,
+  //    contraparte y fecha. Sin nombres ni impuestos: los datos completos se piden solo para la página (paso 4).
+  let consulta = supabase
     .from("factura")
-    .select(SELECCION_FACTURA)
+    .select("id, cliente_id, relacion, rfc_emisor, rfc_receptor, tipo_comprobante, concepto(clave_prod_serv)")
     .eq("estado_revision", "por_revisar")
     .order("emitido_en", { ascending: false });
+  if (tipo) consulta = consulta.eq("tipo_comprobante", tipo);
+  const { data, error } = await consulta;
   if (error) throw new Error(`No se pudieron leer las facturas: ${error.message}`);
-  const [porClave, porEmisor, todas] = await Promise.all([
+  const ligeras = data as unknown as {
+    id: string; cliente_id: string; relacion: "emitida" | "recibida"; rfc_emisor: string; rfc_receptor: string;
+    tipo_comprobante: string; concepto: { clave_prod_serv: string }[];
+  }[];
+  const contraparteDe = (f: { relacion: string; rfc_emisor: string; rfc_receptor: string }) =>
+    f.relacion === "recibida" ? f.rfc_emisor : f.rfc_receptor;
+
+  // 2) Cuántas facturas (no excluidas) tiene cada cliente con cada contraparte: si es 1, el emisor es nuevo.
+  //    Solo se cuentan las contrapartes de las pendientes, no todas las facturas del despacho.
+  const [porClave, porEmisor, conteo] = await Promise.all([
     mapaClaveCategoria(),
     mapaReglasEmisor(),
-    supabase.from("factura").select("cliente_id, relacion, rfc_emisor, rfc_receptor").neq("estado_revision", "excluido"),
+    conteoPorContraparte(supabase, ligeras.map((f) => ({ relacion: f.relacion, rfc: contraparteDe(f) }))),
   ]);
-  // Cuántas facturas (no excluidas) tiene cada cliente con cada contraparte: si es 1, el emisor es nuevo.
-  const conteo = new Map<string, number>();
-  for (const t of todas.data ?? []) {
-    const clave = `${t.cliente_id}|${t.relacion === "recibida" ? t.rfc_emisor : t.rfc_receptor}`;
-    conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
-  }
-  const facturas = (data as unknown as FilaFacturaCompleta[]).map((f) => {
-    const factura = conCategoria(aFactura(f), porClave, porEmisor);
-    const contraparte = factura.relacion === "recibida" ? factura.emisorRfc : factura.receptorRfc;
-    factura.emisorNuevo = conteo.get(`${f.cliente_id}|${contraparte}`) === 1;
-    // Prioridad (RF-31): primero lo que bloquea el resumen, luego lo que conviene mirar.
-    const sinCategoria = factura.conceptos.some((c) => !c.categoria);
-    if (sinCategoria) {
-      factura.prioridad = "alta";
-      factura.motivoPrioridad = "Hay conceptos sin categoría";
-    } else if (factura.emisorNuevo) {
-      factura.prioridad = "alta";
-      factura.motivoPrioridad = "Primera factura de este proveedor";
-    }
-    return factura;
+
+  // 3) Prioridad (RF-31) de todas: primero lo que bloquea el resumen, luego lo que conviene mirar.
+  type Prioridad = { id: string; alta: boolean; motivo?: string; emisorNuevo: boolean; origen?: OrigenClasificacion };
+  const prioridades: Prioridad[] = ligeras.map((f) => {
+    const deEmisor = porEmisor.get(contraparteDe(f));
+    const elegidas = f.concepto.map((c) =>
+      elegirCategoria({ clave: c.clave_prod_serv, relacion: f.relacion, manual: porClave.get(c.clave_prod_serv), deEmisor, base: REGLAS_BASE[c.clave_prod_serv] }),
+    );
+    const sinCategoria = elegidas.some((e) => !e.categoria);
+    const emisorNuevo = conteo.get(`${f.cliente_id}|${f.relacion}|${contraparteDe(f)}`) === 1;
+    return {
+      id: f.id,
+      alta: sinCategoria || emisorNuevo,
+      motivo: sinCategoria ? "Hay conceptos sin categoría" : emisorNuevo ? "Primera factura de este proveedor" : undefined,
+      emisorNuevo,
+      origen: origenDeFactura(new Set(elegidas.map((e) => e.origen))),
+    };
   });
-  // Stable sort: las de prioridad alta primero; dentro de cada grupo, las más recientes primero.
-  return facturas.sort((a, b) => Number(b.prioridad === "alta") - Number(a.prioridad === "alta"));
+  // Orden estable: las de prioridad alta primero; dentro de cada grupo, las más recientes primero.
+  const ordenadas = [...prioridades].sort((a, b) => Number(b.alta) - Number(a.alta));
+
+  // 4) La página: datos completos solo de sus facturas (B4).
+  const pagina = describirPagina(paginaPedida, ordenadas.length);
+  const enPagina = paginaDe(ordenadas, pagina.pagina);
+  let facturas: Factura[] = [];
+  if (enPagina.length > 0) {
+    const { data: completas, error: errorPagina } = await supabase
+      .from("factura").select(SELECCION_FACTURA).in("id", enPagina.map((p) => p.id));
+    if (errorPagina) throw new Error(`No se pudieron leer las facturas: ${errorPagina.message}`);
+    const porId = new Map((completas as unknown as FilaFacturaCompleta[]).map((f) => [f.id, f]));
+    facturas = enPagina.flatMap((p) => {
+      const fila = porId.get(p.id);
+      if (!fila) return [];
+      const factura = conCategoria(aFactura(fila), porClave, porEmisor);
+      factura.emisorNuevo = p.emisorNuevo;
+      if (p.alta) {
+        factura.prioridad = "alta";
+        factura.motivoPrioridad = p.motivo;
+      }
+      return [factura];
+    });
+  }
+
+  return {
+    facturas,
+    pagina,
+    porIa: prioridades.filter((p) => p.origen === "ia").length,
+    porRegla: prioridades.filter((p) => p.origen === "regla" || p.origen === "emisor" || p.origen === "base").length,
+  };
+}
+
+// Cuántas facturas no excluidas tiene cada cliente con cada contraparte, solo para las contrapartes pedidas.
+// Clave del mapa: "cliente|relacion|rfc". Las consultas van en grupos para no armar URLs demasiado largas.
+async function conteoPorContraparte(
+  supabase: Awaited<ReturnType<typeof supabaseServidor>>,
+  contrapartes: { relacion: "emitida" | "recibida"; rfc: string }[],
+): Promise<Map<string, number>> {
+  const conteo = new Map<string, number>();
+  for (const relacion of ["recibida", "emitida"] as const) {
+    const rfcs = [...new Set(contrapartes.filter((c) => c.relacion === relacion).map((c) => c.rfc))];
+    const columna = relacion === "recibida" ? "rfc_emisor" : "rfc_receptor";
+    for (let i = 0; i < rfcs.length; i += 150) {
+      const { data, error } = await supabase
+        .from("factura").select("cliente_id, rfc_emisor, rfc_receptor")
+        .eq("relacion", relacion).neq("estado_revision", "excluido").in(columna, rfcs.slice(i, i + 150));
+      if (error) throw new Error(`No se pudieron contar las facturas por proveedor: ${error.message}`);
+      for (const t of data ?? []) {
+        const clave = `${t.cliente_id}|${relacion}|${relacion === "recibida" ? t.rfc_emisor : t.rfc_receptor}`;
+        conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
+      }
+    }
+  }
+  return conteo;
+}
+
+// Origen de la clasificación de una factura según el de sus conceptos, del más fuerte al más débil.
+function origenDeFactura(origenes: Set<OrigenClasificacion | undefined>): OrigenClasificacion | undefined {
+  return origenes.has("regla") ? "regla"
+    : origenes.has("emisor") ? "emisor"
+      : origenes.has("base") ? "base"
+        : origenes.has("division") ? "division"
+          : undefined;
 }
 
 // Una factura en un listado (búsqueda por folio, facturas de un periodo): solo lo que se muestra en la fila.
@@ -536,10 +628,12 @@ export async function getPeriodosPorCliente(): Promise<Record<string, OpcionPeri
 }
 
 // Un periodo del cliente con sus facturas, de la más reciente a la más antigua.
+// Las facturas van de 50 en 50 (B4); los conteos por estado son de todo el periodo.
 export async function getPeriodoCliente(
   clienteId: string,
   mesAnio: string,
-): Promise<{ periodo: PeriodoCliente; facturas: FacturaListado[] } | undefined> {
+  paginaPedida = 1,
+): Promise<{ periodo: PeriodoCliente; facturas: FacturaListado[]; pagina: Pagina } | undefined> {
   const supabase = await supabaseServidor();
   const { data: periodo, error } = await supabase
     .from("periodo")
@@ -549,15 +643,19 @@ export async function getPeriodoCliente(
     .maybeSingle();
   if (error) throw new Error(`No se pudo leer el periodo: ${error.message}`);
   if (!periodo) return undefined;
-  const { data: facturas, error: errorFacturas } = await supabase
+  const { desde, hasta } = rangoDePagina(Math.max(1, paginaPedida));
+  const { data: facturas, error: errorFacturas, count } = await supabase
     .from("factura")
-    .select(SELECCION_LISTADO)
+    .select(SELECCION_LISTADO, { count: "exact" })
     .eq("periodo_id", periodo.id)
-    .order("emitido_en", { ascending: false });
+    .order("emitido_en", { ascending: false })
+    .order("id")
+    .range(desde, hasta);
   if (errorFacturas) throw new Error(`No se pudieron leer las facturas del periodo: ${errorFacturas.message}`);
   return {
     periodo: aPeriodo(periodo as unknown as FilaPeriodo),
     facturas: (facturas as unknown as FilaListado[]).map(aFacturaListado),
+    pagina: describirPagina(paginaPedida, count ?? 0),
   };
 }
 
@@ -619,16 +717,7 @@ function conCategoria(
           ? [...nombres][0]
           : "Varias categorías";
 
-  const origenes = new Set(factura.conceptos.map((c) => c.origen));
-  factura.origenClasificacion = origenes.has("regla")
-    ? "regla"
-    : origenes.has("emisor")
-      ? "emisor"
-      : origenes.has("base")
-        ? "base"
-        : origenes.has("division")
-          ? "division"
-          : undefined;
+  factura.origenClasificacion = origenDeFactura(new Set(factura.conceptos.map((c) => c.origen)));
   return factura;
 }
 
@@ -691,12 +780,16 @@ export type ClaveEnUso = {
 };
 
 // Solo las claves que aparecen en facturas del despacho, no las 52 mil del catálogo.
-export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
+// De 50 en 50 (B4): conteos, descripciones y asignaciones solo de las claves de la página.
+export async function getClavesEnUso(paginaPedida = 1): Promise<{ claves: ClaveEnUso[]; pagina: Pagina }> {
   const supabase = await supabaseServidor();
-  const { data: usadas, error } = await supabase.from("claves_en_uso").select("clave").order("clave");
+  const { desde, hasta } = rangoDePagina(Math.max(1, paginaPedida));
+  const { data: usadas, error, count } = await supabase
+    .from("claves_en_uso").select("clave", { count: "exact" }).order("clave").range(desde, hasta);
   if (error) throw new Error(`No se pudieron leer las claves: ${error.message}`);
+  const pagina = describirPagina(paginaPedida, count ?? 0);
   const claves = usadas.map((u) => u.clave as string);
-  if (claves.length === 0) return [];
+  if (claves.length === 0) return { claves: [], pagina };
 
   const [catalogo, mapeo, usos, categorias] = await Promise.all([
     supabase.from("cat_clave_prod_serv").select("clave, descripcion").in("clave", claves),
@@ -738,7 +831,7 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
     ]),
   );
 
-  return claves.map((clave) => {
+  const lista = claves.map((clave): ClaveEnUso => {
     const { emitidas, recibidas, pendientes, aprobadas } =
       conteo.get(clave) ?? { emitidas: 0, recibidas: 0, pendientes: 0, aprobadas: 0 };
     const asignada = asignadas.get(clave) ?? null;
@@ -773,6 +866,7 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
       aviso,
     };
   });
+  return { claves: lista, pagina };
 }
 
 // Enlace vigente del cliente (RF-04). Solo llamar para administrador y contador: la contraseña no se guarda
