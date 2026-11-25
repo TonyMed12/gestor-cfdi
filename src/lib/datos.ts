@@ -807,14 +807,32 @@ export async function getRelacionesArchivo(archivoId: string) {
 }
 
 // Cambios de categoría de los conceptos de una factura, del más reciente al más antiguo (RF-32).
-export async function getHistorialClasificacion(conceptoIds: string[]) {
+export type CambioCategoria = {
+  categoria_anterior: string | null;
+  categoria_nueva: string;
+  cambiado_en: string;
+  cambiado_por: string; // nombre de quien hizo el cambio (A8)
+  concepto: string; // descripción del concepto que cambió
+};
+
+// Historial de reclasificaciones de los conceptos de una factura (RF-32, A8): categoría anterior, nueva,
+// cuándo y quién. Se registra al aprobar con «Corregir» (aprobarFactura). RLS limita a tu despacho.
+export async function getHistorialClasificacion(conceptoIds: string[]): Promise<CambioCategoria[]> {
   if (conceptoIds.length === 0) return [];
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
-    .from("clasificacion_historial").select("categoria_anterior, categoria_nueva, cambiado_en")
-    .in("concepto_id", conceptoIds).order("cambiado_en", { ascending: false });
+    .from("clasificacion_historial")
+    .select("categoria_anterior, categoria_nueva, cambiado_en, usuario(nombre), concepto(descripcion)")
+    .in("concepto_id", conceptoIds)
+    .order("cambiado_en", { ascending: false });
   if (error) throw new Error(`No se pudo leer el historial de categorías: ${error.message}`);
-  return data ?? [];
+  return (data ?? []).map((h) => ({
+    categoria_anterior: h.categoria_anterior,
+    categoria_nueva: h.categoria_nueva,
+    cambiado_en: h.cambiado_en,
+    cambiado_por: unaFila(h.usuario as { nombre: string } | { nombre: string }[] | null)?.nombre ?? "Usuario no disponible",
+    concepto: unaFila(h.concepto as { descripcion: string } | { descripcion: string }[] | null)?.descripcion ?? "",
+  }));
 }
 
 // Categorías propias de un cliente (RF-29). Las del despacho se leen con getCategorias.

@@ -20,7 +20,13 @@ const etiquetaOrigen: Record<OrigenClasificacion, string> = {
 type Categoria = { id: string; nombre: string; deducible: boolean };
 type Modo = "vista" | "corregir" | "rechazar";
 
-type CambioCategoria = { categoria_anterior: string | null; categoria_nueva: string; cambiado_en: string };
+type CambioCategoria = {
+  categoria_anterior: string | null;
+  categoria_nueva: string;
+  cambiado_en: string;
+  cambiado_por: string;
+  concepto: string;
+};
 
 export function RevisionClient({ factura, categorias, historial }: {
   factura: Factura;
@@ -51,6 +57,20 @@ export function RevisionClient({ factura, categorias, historial }: {
     if (resultado.error) return setError(resultado.error);
     setModo("vista");
     router.refresh();
+  }
+
+  // Los selectores de categoría están en la tabla de conceptos, lejos del botón «Corregir»:
+  // al entrar al modo de corrección, la página lleva al primer selector.
+  function irAConceptos() {
+    const tabla = document.getElementById("conceptos");
+    tabla?.scrollIntoView({ behavior: "smooth", block: "center" });
+    tabla?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
+  }
+
+  function iniciarCorreccion() {
+    setModo("corregir");
+    // Espera a que se dibujen los selectores antes de llevar ahí la vista.
+    requestAnimationFrame(() => requestAnimationFrame(irAConceptos));
   }
 
   async function rechazar() {
@@ -186,7 +206,7 @@ export function RevisionClient({ factura, categorias, historial }: {
               </Dato>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-[#EEF1F4]">
+            <div id="conceptos" className="overflow-x-auto rounded-lg border border-[#EEF1F4] scroll-mt-6">
               <table className="w-full min-w-[620px] border-collapse text-sm">
                 <thead>
                   <tr className="bg-[#F8FAFB] text-left text-[13px] text-text-muted">
@@ -219,7 +239,7 @@ export function RevisionClient({ factura, categorias, historial }: {
                             onChange={(e) =>
                               setCorregidas((prev) => ({ ...prev, [c.id ?? ""]: e.target.value }))
                             }
-                            className="h-9 w-full rounded-lg border border-[#8A96A3] bg-surface px-2 text-sm"
+                            className="h-9 w-full min-w-[220px] rounded-lg border border-[#8A96A3] bg-surface px-2 text-sm"
                           >
                             <option value="">Elige una categoría</option>
                             {categorias.map((k) => (
@@ -432,7 +452,7 @@ export function RevisionClient({ factura, categorias, historial }: {
               <div className="flex gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setModo("corregir")}
+                  onClick={iniciarCorreccion}
                   className="h-11 flex-1 rounded-lg border border-[#C9D1DA] bg-surface text-[15px] font-semibold"
                 >
                   Corregir
@@ -451,7 +471,11 @@ export function RevisionClient({ factura, categorias, historial }: {
           {!aprobada && !rechazada && modo === "corregir" && (
             <div className="flex flex-col gap-2.5">
               <p className="m-0 text-sm text-text-muted">
-                Cambia la categoría de cada concepto si no es la correcta. Al aprobar, queda fija.
+                Cambia la categoría de cada concepto en la{" "}
+                <a href="#conceptos" onClick={(e) => { e.preventDefault(); irAConceptos(); }} className="font-semibold">
+                  tabla de conceptos
+                </a>{" "}
+                y luego aprueba. Al aprobar, queda fija y el cambio se guarda en el historial.
               </p>
               <button
                 type="button"
@@ -510,12 +534,23 @@ export function RevisionClient({ factura, categorias, historial }: {
           {historial.length > 0 && (
             <div className="flex flex-col gap-2 border-t border-[#EEF1F4] pt-4">
               <span className="text-sm font-semibold">Cambios de categoría</span>
-              <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
+              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[13px]">
                 {historial.map((h, i) => (
-                  <li key={i} className="flex flex-col">
-                    <span>{h.categoria_anterior ?? "Sin categoría"} → {h.categoria_nueva}</span>
+                  <li key={i} className="flex flex-col gap-0.5">
+                    {factura.conceptos.length > 1 && h.concepto && (
+                      <span className="text-text-muted">{h.concepto}</span>
+                    )}
+                    <span>
+                      <span className="text-text-muted">{h.categoria_anterior ?? "Sin categoría"}</span> →{" "}
+                      <span className="font-semibold">{h.categoria_nueva}</span>
+                    </span>
                     <span className="text-text-muted">
-                      {new Date(h.cambiado_en).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+                      {new Date(h.cambiado_en).toLocaleString("es-MX", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "America/Mexico_City",
+                      })}{" "}
+                      · {h.cambiado_por}
                     </span>
                   </li>
                 ))}
