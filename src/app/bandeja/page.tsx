@@ -4,8 +4,9 @@ import { Badge } from "@/components/Badge";
 import { BuscadorUuid, ResultadosUuid } from "@/components/BuscadorUuid";
 import { interpretarBusquedaUuid } from "@/lib/busqueda";
 import { NOMBRE_APP } from "@/lib/config";
-import { buscarFacturasPorUuid, getFacturasPorRevisar, LIMITE_RESULTADOS_UUID } from "@/lib/datos";
+import { buscarFacturasPorUuid, getFacturasPorRevisar, getPerfil, LIMITE_RESULTADOS_UUID } from "@/lib/datos";
 import { getPeriodoActual } from "@/lib/mock-data";
+import { AprobacionEnLote } from "./AprobacionEnLote";
 
 export const metadata = { title: `Bandeja de revisión · ${NOMBRE_APP}` };
 
@@ -56,7 +57,9 @@ export default async function BandejaPage({
   }
 
   const tipoActivo = TIPOS.some((t) => t.codigo === tipo) ? (tipo ?? "") : "";
-  const todas = await getFacturasPorRevisar();
+  const [todas, perfil] = await Promise.all([getFacturasPorRevisar(), getPerfil()]);
+  // Solo administrador y contador aprueban (RN-05); el auxiliar ve la bandeja sin casillas.
+  const puedeDecidir = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const facturas = tipoActivo ? todas.filter((f) => f.tipoComprobante === tipoActivo) : todas;
   const porIa = facturas.filter((f) => f.origenClasificacion === "ia").length;
   const porRegla = facturas.filter(
@@ -132,11 +135,17 @@ export default async function BandejaPage({
         </label>
       </div>
 
+      <AprobacionEnLote activo={puedeDecidir && facturas.length > 0}>
       <section className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <table className="w-full min-w-[980px] border-collapse text-[15px]">
+        <table className="w-full min-w-[1020px] border-collapse text-[15px]">
           <thead>
             <tr className="text-left text-[13px] text-text-muted">
-              <th className="px-5 py-3.5 font-semibold">Prioridad</th>
+              {puedeDecidir && facturas.length > 0 && (
+                <th className="w-12 py-3.5 pl-5">
+                  <input type="checkbox" name="todas" aria-label="Seleccionar todas las facturas" className="h-4 w-4" />
+                </th>
+              )}
+              <th className={`${puedeDecidir && facturas.length > 0 ? "px-3" : "px-5"} py-3.5 font-semibold`}>Prioridad</th>
               <th className="px-3 py-3.5 font-semibold">
                 Emisor / receptor
               </th>
@@ -160,7 +169,18 @@ export default async function BandejaPage({
                   i === 0 ? "bg-[#F3FAF8]" : ""
                 }`}
               >
-                <td className="px-5 py-3.5">
+                {puedeDecidir && (
+                  <td className="py-3.5 pl-5">
+                    <input
+                      type="checkbox"
+                      name="factura"
+                      value={f.id}
+                      aria-label={`Seleccionar la factura de ${f.emisorNombre}`}
+                      className="h-4 w-4"
+                    />
+                  </td>
+                )}
+                <td className={`${puedeDecidir ? "px-3" : "px-5"} py-3.5`}>
                   {f.prioridad === "alta" ? (
                     <div className="flex flex-col gap-1">
                       <Badge variant="warn">Alta</Badge>
@@ -245,6 +265,7 @@ export default async function BandejaPage({
           </p>
         )}
       </section>
+      </AprobacionEnLote>
       <p className="m-0 text-sm text-text-muted">
         Cada concepto se clasifica en este orden: clave asignada a mano,
         regla por emisor, regla base y, por último, sugerencia de la clave del SAT.

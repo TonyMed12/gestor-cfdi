@@ -26,6 +26,15 @@ export async function aprobarFactura(
   facturaId: string,
   corregidas: Record<string, string> = {},
 ): Promise<{ error?: string }> {
+  return aprobar(facturaId, corregidas);
+}
+
+// Aprobación de una factura. `detalle` agrega datos a la bitácora (por ejemplo, que fue en lote).
+async function aprobar(
+  facturaId: string,
+  corregidas: Record<string, string>,
+  detalle: Record<string, unknown> = {},
+): Promise<{ error?: string }> {
   const permiso = await permisoDecidir(facturaId);
   if ("error" in permiso) return { error: permiso.error };
 
@@ -54,7 +63,7 @@ export async function aprobarFactura(
     await registrarAccion(
       permiso.supabase,
       Object.keys(corregidas).length > 0 ? "corrigio" : "aprobo",
-      { conceptos_corregidos: Object.keys(corregidas).length },
+      { conceptos_corregidos: Object.keys(corregidas).length, ...detalle },
       facturaId,
     );
   } catch {
@@ -87,6 +96,56 @@ export async function aprobarFactura(
   revalidatePath(`/revision/${facturaId}`);
   revalidatePath("/resumen");
   return {};
+}
+
+export type ResultadoLote = {
+  error?: string;
+  aprobadas: { id: string; descripcion: string }[];
+  noAprobadas: { id: string; descripcion: string; motivo: string }[];
+};
+
+// No se exporta: un archivo "use server" solo puede exportar funciones asíncronas.
+const MAXIMO_FACTURAS_EN_LOTE = 100;
+
+// Aprueba varias facturas de la bandeja (A6). Solo se aprueban las que siguen por revisar y tienen
+// todos sus conceptos clasificados; las demás se informan con su motivo y no cambian.
+// Cada aprobación es igual que aprobar una por una: con las categorías propuestas y su registro en la bitácora.
+export async function aprobarFacturasEnLote(facturaIds: string[]): Promise<ResultadoLote> {
+  const unicas = [...new Set(facturaIds)];
+  if (unicas.length === 0) return { error: "Selecciona al menos una factura.", aprobadas: [], noAprobadas: [] };
+  if (unicas.length > MAXIMO_FACTURAS_EN_LOTE) {
+    return { error: `Selecciona como máximo ${MAXIMO_FACTURAS_EN_LOTE} facturas a la vez.`, aprobadas: [], noAprobadas: [] };
+  }
+  const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!unicas.every((id) => esUuid.test(id))) return { error: "Hay una factura no válida.", aprobadas: [], noAprobadas: [] };
+
+  const resultado: ResultadoLote = { aprobadas: [], noAprobadas: [] };
+  for (const id of unicas) {
+    const factura = await getFacturaPorId(id);
+    if (!factura) {
+      resultado.noAprobadas.push({ id, descripcion: "Factura", motivo: "No se encontró la factura." });
+      continue;
+    }
+    const descripcion = `${factura.relacion === "recibida" ? factura.emisorNombre : factura.receptorNombre} · $${factura.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
+    if (factura.estadoRevision !== "por_revisar") {
+      resultado.noAprobadas.push({ id, descripcion, motivo: "Ya no está por revisar." });
+      continue;
+    }
+    const sinCategoria = factura.conceptos.filter((c) => !c.categoria).length;
+    if (sinCategoria > 0) {
+      resultado.noAprobadas.push({
+        id,
+        descripcion,
+        motivo: sinCategoria === 1 ? "Tiene 1 concepto sin categoría." : `Tiene ${sinCategoria} conceptos sin categoría.`,
+      });
+      continue;
+    }
+    const r = await aprobar(id, {}, { en_lote: true });
+    if (r.error) resultado.noAprobadas.push({ id, descripcion, motivo: r.error });
+    else resultado.aprobadas.push({ id, descripcion });
+  }
+  revalidatePath("/bandeja");
+  return resultado;
 }
 
 // Rechaza la factura: sale de la clasificación y del resumen, con un motivo (RF-40).
