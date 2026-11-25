@@ -148,6 +148,38 @@ export async function aprobarFacturasEnLote(facturaIds: string[]): Promise<Resul
   return resultado;
 }
 
+// Marca una factura recibida como deducible, no deducible o según la categoría (A7).
+// Se decide en la revisión, antes de aprobar: una factura aprobada o rechazada ya no cambia.
+export async function guardarDeducible(
+  facturaId: string,
+  valor: "categoria" | "si" | "no",
+): Promise<{ error?: string }> {
+  if (!["categoria", "si", "no"].includes(valor)) return { error: "Opción no válida." };
+  const permiso = await permisoDecidir(facturaId);
+  if ("error" in permiso) return { error: permiso.error };
+
+  const { data: factura } = await permiso.supabase
+    .from("factura").select("relacion, estado_revision, deducible").eq("id", facturaId).maybeSingle();
+  if (!factura) return { error: "No se encontró la factura." };
+  if (factura.relacion !== "recibida") return { error: "Solo una factura recibida (gasto) puede ser deducible." };
+  if (factura.estado_revision !== "por_revisar") {
+    return { error: "La factura ya no está por revisar: su deducibilidad no se puede cambiar." };
+  }
+  const deducible = valor === "categoria" ? null : valor === "si";
+  if (factura.deducible === deducible) return {};
+
+  try {
+    await registrarAccion(permiso.supabase, "corrigio", { deducible: valor, antes: factura.deducible }, facturaId);
+  } catch {
+    return { error: "No se pudo registrar el cambio. Intenta de nuevo." };
+  }
+  const { error } = await permiso.supabase.from("factura").update({ deducible }).eq("id", facturaId);
+  if (error) return { error: "No se pudo guardar la deducibilidad." };
+
+  revalidatePath(`/revision/${facturaId}`);
+  return {};
+}
+
 // Rechaza la factura: sale de la clasificación y del resumen, con un motivo (RF-40).
 export async function rechazarFactura(facturaId: string, motivo: string): Promise<{ error?: string }> {
   const texto = motivo.trim();

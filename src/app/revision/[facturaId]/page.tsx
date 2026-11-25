@@ -37,7 +37,7 @@ export default async function RevisionPage({
   return (
     <RevisionClient
       factura={factura}
-      categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
+      categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre, deducible: c.deducibleDefault }))}
       historial={historial}
     />
   );

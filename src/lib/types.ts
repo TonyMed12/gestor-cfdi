@@ -84,6 +84,7 @@ export interface Factura {
   estadoSat: EstadoSat;
   estadoRevision: EstadoRevision;
   motivoExclusion?: string;
+  deducible?: boolean | null; // A7: null = según la categoría; true o false = marca del contador (solo recibidas)
   prioridad: "alta" | "normal";
   motivoPrioridad?: string;
   categoriaPropuesta: string;

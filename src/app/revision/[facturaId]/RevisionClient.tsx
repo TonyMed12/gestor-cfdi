@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { deduccionesDeFactura } from "@/lib/deducibilidad";
 import type { Factura, OrigenClasificacion } from "@/lib/types";
-import { aprobarFactura, rechazarFactura } from "./acciones";
+import { aprobarFactura, guardarDeducible, rechazarFactura } from "./acciones";
 
 const etiquetaOrigen: Record<OrigenClasificacion, string> = {
   regla: "Clave asignada a mano",
@@ -15,7 +16,7 @@ const etiquetaOrigen: Record<OrigenClasificacion, string> = {
   ia: "Sugerencia de IA",
 };
 
-type Categoria = { id: string; nombre: string };
+type Categoria = { id: string; nombre: string; deducible: boolean };
 type Modo = "vista" | "corregir" | "rechazar";
 
 type CambioCategoria = { categoria_anterior: string | null; categoria_nueva: string; cambiado_en: string };
@@ -62,10 +63,43 @@ export function RevisionClient({ factura, categorias, historial }: {
   }
 
   const subtotal = factura.conceptos.reduce((s, c) => s + c.importe, 0);
-  const iva = factura.conceptos
-    .flatMap((c) => c.impuestos)
-    .filter((i) => i.impuesto === "IVA")
-    .reduce((s, i) => s + i.importe, 0);
+  const ivaTrasladadoDe = (c: Factura["conceptos"][number]) =>
+    c.impuestos.filter((i) => i.impuesto === "IVA" && i.tipo === "trasladado").reduce((s, i) => s + i.importe, 0);
+  const iva = factura.conceptos.reduce((s, c) => s + ivaTrasladadoDe(c), 0);
+
+  // Deducibilidad (A7): la marca de la factura gana sobre la de la categoría de cada concepto.
+  // Con "Corregir", cuenta la categoría que el contador está eligiendo.
+  const categoriaPorId = new Map(categorias.map((k) => [k.id, k]));
+  const categoriaPorNombre = new Map(categorias.map((k) => [k.nombre, k]));
+  const recibida = factura.relacion === "recibida";
+  const editable = !aprobada && !rechazada;
+  const [marca, setMarca] = useState<boolean | null>(factura.deducible ?? null);
+  const [guardandoMarca, setGuardandoMarca] = useState(false);
+  const deducciones = deduccionesDeFactura({
+    relacion: factura.relacion,
+    marca,
+    conceptos: factura.conceptos.map((c) => {
+      const categoria = (c.id && corregidas[c.id] && categoriaPorId.get(corregidas[c.id])) ||
+        (c.categoria ? categoriaPorNombre.get(c.categoria) : undefined);
+      return { importe: c.importe, ivaTrasladado: ivaTrasladadoDe(c), deducibleCategoria: categoria?.deducible };
+    }),
+  });
+  const categoriasNoDeducibles = factura.conceptos.some((c) => c.categoria && categoriaPorNombre.get(c.categoria)?.deducible === false);
+
+  async function cambiarMarca(valor: "categoria" | "si" | "no") {
+    const anterior = marca;
+    setMarca(valor === "categoria" ? null : valor === "si");
+    setError("");
+    setGuardandoMarca(true);
+    const resultado = await guardarDeducible(factura.id, valor);
+    setGuardandoMarca(false);
+    if (resultado.error) {
+      setMarca(anterior);
+      setError(resultado.error);
+    } else {
+      router.refresh();
+    }
+  }
 
   return (
     <AppShell active="/bandeja">
@@ -291,12 +325,57 @@ export function RevisionClient({ factura, categorias, historial }: {
 
           <dl className="m-0 flex flex-col gap-3 text-[15px]">
             <Fila label="Categoría propuesta">{factura.categoriaPropuesta}</Fila>
+            {recibida && (
+              <Fila label="Gasto deducible">
+                <span className="font-mono">
+                  ${deducciones.gastoDeducible.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                </span>
+              </Fila>
+            )}
             <Fila label="IVA acreditable" last>
               <span className="font-mono">
-                ${iva.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                ${deducciones.ivaAcreditable.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
               </span>
             </Fila>
           </dl>
+
+          {recibida ? (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="deducible" className="text-sm font-semibold">
+                Deducibilidad de la factura
+              </label>
+              {editable ? (
+                <select
+                  id="deducible"
+                  value={marca === null ? "categoria" : marca ? "si" : "no"}
+                  disabled={guardandoMarca || enviando}
+                  onChange={(e) => cambiarMarca(e.target.value as "categoria" | "si" | "no")}
+                  className="h-10 rounded-lg border border-[#8A96A3] bg-surface px-2.5 text-[15px] disabled:opacity-60"
+                >
+                  <option value="categoria">Según la categoría de cada concepto</option>
+                  <option value="si">Deducible</option>
+                  <option value="no">No deducible</option>
+                </select>
+              ) : (
+                <span className="text-[15px]">
+                  {marca === null ? "Según la categoría de cada concepto" : marca ? "Deducible" : "No deducible"}
+                </span>
+              )}
+              <span className="text-[13px] text-text-muted">
+                {marca === null
+                  ? categoriasNoDeducibles
+                    ? "Algún concepto está en una categoría no deducible: su importe e IVA no se cuentan."
+                    : "Todos los conceptos están en categorías deducibles."
+                  : marca
+                    ? "Toda la factura se deduce y su IVA se acredita, sin importar la categoría."
+                    : "Nada de esta factura se deduce ni se acredita, sin importar la categoría."}
+              </span>
+            </div>
+          ) : (
+            <p className="m-0 text-[13px] text-text-muted">
+              Factura emitida: es un ingreso, así que no tiene deducciones ni IVA acreditable.
+            </p>
+          )}
 
           {factura.emisorNuevo && (
             <p className="m-0 rounded-lg bg-[#FFF6E6] px-3 py-2.5 text-sm text-warn-soft-text">

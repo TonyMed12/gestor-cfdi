@@ -187,7 +187,7 @@ export async function getCliente(id: string): Promise<Cliente | undefined> {
 
 // Facturas leídas de la base, con sus conceptos e impuestos (RLS limita a tu despacho).
 const SELECCION_FACTURA =
-  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, regimen_receptor, fuente, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, emitido_en, timbrado_en, concepto(id, clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, categoria_id, categoria(nombre), impuesto(tipo, impuesto, tasa, importe))";
+  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, regimen_receptor, fuente, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, deducible, emitido_en, timbrado_en, concepto(id, clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, categoria_id, categoria(nombre), impuesto(tipo, impuesto, tasa, importe))";
 
 type FilaFacturaCompleta = {
   id: string;
@@ -211,6 +211,7 @@ type FilaFacturaCompleta = {
   fecha_consulta_sat: string;
   estado_revision: string;
   motivo_exclusion: string | null;
+  deducible: boolean | null;
   emitido_en: string;
   timbrado_en: string;
   concepto: {
@@ -251,6 +252,7 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
   estadoSat: f.estado_sat as Factura["estadoSat"],
   estadoRevision: f.estado_revision as Factura["estadoRevision"],
   motivoExclusion: f.motivo_exclusion ?? undefined,
+  deducible: f.deducible,
   prioridad: "normal",
   categoriaPropuesta: "Sin clasificar",
   conceptos: f.concepto.map(
