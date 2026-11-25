@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Conjunto de prueba C7 (datos inventados). Ingreso: asesoría con IVA 16 %, retención de ISR 10 % y de IVA (dos terceras partes). -->
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Fecha="2026-10-05T10:00:00" FormaPago="03" MetodoPago="PUE" SubTotal="20000.00" Moneda="MXN" Total="19066.67" TipoDeComprobante="I" Exportacion="01" LugarExpedicion="64000">
+  <cfdi:Emisor Rfc="CEJ190312AB1" Nombre="Consultores Ejemplo SC" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="IEJ050505AB4" Nombre="Industrias Ejemplo SA de CV" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="80101500" Cantidad="1" ClaveUnidad="E48" Descripcion="Asesoría administrativa de octubre" ValorUnitario="20000.00" Importe="20000.00" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="20000.00" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="3200.00"/>
+        </cfdi:Traslados>
+        <cfdi:Retenciones>
+          <cfdi:Retencion Base="20000.00" Impuesto="001" TipoFactor="Tasa" TasaOCuota="0.100000" Importe="2000.00"/>
+          <cfdi:Retencion Base="20000.00" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.106667" Importe="2133.33"/>
+        </cfdi:Retenciones>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosRetenidos="4133.33" TotalImpuestosTrasladados="3200.00"/>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="C7000001-0000-4000-8000-000000000001" FechaTimbrado="2026-10-05T10:00:30"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

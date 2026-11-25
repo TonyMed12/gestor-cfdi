@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Conjunto de prueba C7 (datos inventados). Laptop comprada en la región fronteriza con IVA al 8 %: se acredita (C4). -->
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Fecha="2026-10-12T16:00:00" FormaPago="03" MetodoPago="PUE" SubTotal="12000.00" Moneda="MXN" Total="12960.00" TipoDeComprobante="I" Exportacion="01" LugarExpedicion="22000">
+  <cfdi:Emisor Rfc="CFR111111AB3" Nombre="Cómputo Fronterizo SA de CV" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="CEJ190312AB1" Nombre="Consultores Ejemplo SC" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="I04"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="43211503" Cantidad="1" ClaveUnidad="E48" Descripcion="Computadora portátil" ValorUnitario="12000.00" Importe="12000.00" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="12000.00" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.080000" Importe="960.00"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="960.00"/>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="C7000007-0000-4000-8000-000000000007" FechaTimbrado="2026-10-12T16:00:30"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

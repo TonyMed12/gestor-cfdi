@@ -1,0 +1,28 @@
+{
+  "_nota": "Resultado calculado a mano (ver LEEME.md). Si cambia una regla del cálculo, se corrige aquí a mano, nunca copiando lo que da el programa.",
+  "totales": {
+    "ingresos": 18000,
+    "gastos": 31800,
+    "gastosDeducibles": 31000,
+    "ivaTrasladado": 2880,
+    "ivaAcreditable": 3200,
+    "retencionesAFavor": 3720,
+    "retencionesPorEnterar": 2066.67
+  },
+  "filas": [
+    { "tipo": "Ingreso", "categoria": "Servicios prestados", "facturas": 2, "importe": 18000, "gastoDeducible": 0, "ivaTrasladado": 2880, "ivaAcreditable": 0, "iepsTrasladado": 0, "isrRetenido": 1800, "ivaRetenido": 1920 },
+    { "tipo": "Gasto", "categoria": "Equipo de cómputo y software", "facturas": 1, "importe": 12000, "gastoDeducible": 12000, "ivaTrasladado": 960, "ivaAcreditable": 960, "iepsTrasladado": 0, "isrRetenido": 0, "ivaRetenido": 0 },
+    { "tipo": "Gasto", "categoria": "Renta de local o equipo", "facturas": 1, "importe": 10000, "gastoDeducible": 10000, "ivaTrasladado": 1600, "ivaAcreditable": 1600, "iepsTrasladado": 0, "isrRetenido": 1000, "ivaRetenido": 1066.67 },
+    { "tipo": "Gasto", "categoria": "Compras de mercancía o insumos", "facturas": 1, "importe": 5000, "gastoDeducible": 5000, "ivaTrasladado": 0, "ivaAcreditable": 0, "iepsTrasladado": 0, "isrRetenido": 0, "ivaRetenido": 0 },
+    { "tipo": "Gasto", "categoria": "Gastos de oficina y papelería", "facturas": 1, "importe": 4000, "gastoDeducible": 4000, "ivaTrasladado": 640, "ivaAcreditable": 640, "iepsTrasladado": 0, "isrRetenido": 0, "ivaRetenido": 0 },
+    { "tipo": "Gasto", "categoria": "Combustible, viáticos y transporte", "facturas": 1, "importe": 800, "gastoDeducible": 0, "ivaTrasladado": 128, "ivaAcreditable": 0, "iepsTrasladado": 0, "isrRetenido": 0, "ivaRetenido": 0 }
+  ],
+  "incluidas": 7,
+  "excluidas": {
+    "08-cancelada.xml": "Cancelada ante el SAT",
+    "09-pendiente.xml": "Pendiente de aprobar",
+    "10-pago.xml": "Comprobante de pago: el importe ya está en la factura que paga",
+    "11-internet-dolares.xml": "En USD: falta el tipo de cambio"
+  },
+  "ajusteNoDesglosado": { "importe": 0, "facturas": 0 }
+}

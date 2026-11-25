@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Conjunto de prueba C7 (datos inventados). Comprobante de pago (P): su importe ya está en la factura que paga, así que no suma. -->
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Fecha="2026-10-25T13:00:00" FormaPago="03" MetodoPago="PUE" SubTotal="0" Moneda="XXX" Total="0" TipoDeComprobante="P" Exportacion="01" LugarExpedicion="64000">
+  <cfdi:Emisor Rfc="CEJ190312AB1" Nombre="Consultores Ejemplo SC" RegimenFiscal="601"/>
+  <cfdi:Receptor Rfc="IEJ050505AB4" Nombre="Industrias Ejemplo SA de CV" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="CP01"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="84111506" Cantidad="1" ClaveUnidad="E48" Descripcion="Pago" ValorUnitario="0" Importe="0" ObjetoImp="01"/>
+  </cfdi:Conceptos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="C7000010-0000-4000-8000-000000000010" FechaTimbrado="2026-10-25T13:00:30"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

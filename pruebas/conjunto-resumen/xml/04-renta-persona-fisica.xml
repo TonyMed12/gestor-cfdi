@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Conjunto de prueba C7 (datos inventados). Renta pagada a una persona física: el cliente retiene ISR 10 % e IVA (dos terceras partes) y debe enterarlos. -->
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Fecha="2026-10-01T08:00:00" FormaPago="03" MetodoPago="PUE" SubTotal="10000.00" Moneda="MXN" Total="9533.33" TipoDeComprobante="I" Exportacion="01" LugarExpedicion="64000">
+  <cfdi:Emisor Rfc="PELJ800101AB1" Nombre="Juan Pérez López" RegimenFiscal="606"/>
+  <cfdi:Receptor Rfc="CEJ190312AB1" Nombre="Consultores Ejemplo SC" DomicilioFiscalReceptor="64000" RegimenFiscalReceptor="601" UsoCFDI="G03"/>
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="80131502" Cantidad="1" ClaveUnidad="E48" Descripcion="Renta de oficina de octubre" ValorUnitario="10000.00" Importe="10000.00" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="10000.00" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="1600.00"/>
+        </cfdi:Traslados>
+        <cfdi:Retenciones>
+          <cfdi:Retencion Base="10000.00" Impuesto="001" TipoFactor="Tasa" TasaOCuota="0.100000" Importe="1000.00"/>
+          <cfdi:Retencion Base="10000.00" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.106667" Importe="1066.67"/>
+        </cfdi:Retenciones>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosRetenidos="2066.67" TotalImpuestosTrasladados="1600.00"/>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="C7000004-0000-4000-8000-000000000004" FechaTimbrado="2026-10-01T08:00:30"/>
+  </cfdi:Complemento>
+</cfdi:Comprobante>

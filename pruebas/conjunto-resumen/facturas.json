@@ -1,0 +1,19 @@
+{
+  "cliente": { "rfc": "CEJ190312AB1", "razonSocial": "Consultores Ejemplo SC", "periodo": "2026-10" },
+  "clavesAsignadasAMano": {
+    "80131502": "Renta de local o equipo"
+  },
+  "facturas": [
+    { "archivo": "01-asesoria-emitida.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "02-nota-credito-emitida.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "03-papeleria.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "04-renta-persona-fisica.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "05-restaurante.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": false },
+    { "archivo": "06-maiz-tasa-cero.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "07-laptop-frontera-8.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "08-cancelada.xml", "estadoRevision": "clasificado", "estadoSat": "cancelada", "deducible": null },
+    { "archivo": "09-pendiente.xml", "estadoRevision": "por_revisar", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "10-pago.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null },
+    { "archivo": "11-internet-dolares.xml", "estadoRevision": "clasificado", "estadoSat": "vigente", "deducible": null }
+  ]
+}
