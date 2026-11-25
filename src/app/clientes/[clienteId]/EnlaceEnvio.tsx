@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { generarEnlaceEnvio } from "./acciones";
+
+// window solo existe en el navegador. En el servidor el origen queda vacío y React lo completa
+// al hidratar, sin desajuste entre lo que dibuja el servidor y el navegador.
+const sinSuscripcion = () => () => {};
+const origenNavegador = () => window.location.origin;
+const origenServidor = () => "";
 
 type Enlace = { token: string; venceEn: string };
 
@@ -21,7 +27,8 @@ export function EnlaceEnvio({ clienteId, enlaceInicial }: {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const url = enlace ? `${window.location.origin}/enviar/${enlace.token}` : "";
+  const origen = useSyncExternalStore(sinSuscripcion, origenNavegador, origenServidor);
+  const url = enlace ? `${origen}/enviar/${enlace.token}` : "";
 
   async function generar() {
     setConfirmando(false);
