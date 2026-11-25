@@ -1,7 +1,31 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { esDeducible } from "../src/lib/deducibilidad.ts";
-import { calcularResumen, motivoExclusion } from "../src/lib/resumen.ts";
+import { agruparExclusiones, calcularResumen, cuadraConPeriodo, motivoExclusion } from "../src/lib/resumen.ts";
+
+test("las facturas fuera del resumen se agrupan por motivo y el total cuadra con el periodo (C5)", () => {
+  const r = calcularResumen([
+    factura({ id: "A" }),
+    factura({ id: "B", estadoRevision: "por_revisar" }),
+    factura({ id: "C", estadoRevision: "por_revisar" }),
+    factura({ id: "D", estadoSat: "cancelada" }),
+    factura({ id: "E", estadoRevision: "por_confirmar" }),
+    factura({ id: "F", estadoRevision: "excluido", motivoExclusion: "Los importes y los impuestos no suman el total" }),
+  ]);
+  assert.deepEqual(
+    agruparExclusiones(r.excluidas).map((g) => [g.motivo, g.facturas.map((x) => x.id)]),
+    [
+      ["Pendiente de aprobar", ["B", "C"]],
+      ["Cancelada ante el SAT", ["D"]],
+      ["Excluida: Los importes y los impuestos no suman el total", ["F"]],
+      ["Por confirmar", ["E"]],
+    ],
+  );
+  assert.equal(r.incluidas, 1);
+  assert.equal(cuadraConPeriodo(r.incluidas, r.excluidas.length, 6), true);
+  assert.equal(cuadraConPeriodo(r.incluidas, r.excluidas.length, 7), false);
+  assert.deepEqual(agruparExclusiones([]), []);
+});
 
 test("la marca por factura (A7) gana sobre la categoría en gastos deducibles e IVA acreditable", () => {
   // Misma factura de papelería (categoría deducible) con las tres marcas posibles, resuelta como en datos.ts.

@@ -38,6 +38,21 @@ export type FilaResumen = {
 
 export type Exclusion = { id: string; motivo: string };
 
+export type GrupoExclusion<T extends Exclusion = Exclusion> = { motivo: string; facturas: T[] };
+
+// Facturas fuera del resumen agrupadas por motivo (C5, RF-40): de más a menos facturas y, si empatan, por motivo.
+export function agruparExclusiones<T extends Exclusion>(excluidas: T[]): GrupoExclusion<T>[] {
+  const grupos = new Map<string, T[]>();
+  for (const e of excluidas) grupos.set(e.motivo, [...(grupos.get(e.motivo) ?? []), e]);
+  return [...grupos]
+    .map(([motivo, facturas]) => ({ motivo, facturas }))
+    .sort((a, b) => b.facturas.length - a.facturas.length || a.motivo.localeCompare(b.motivo, "es"));
+}
+
+// ¿Las incluidas más las de fuera suman todas las facturas del periodo? (C5: "el número cuadra").
+export const cuadraConPeriodo = (incluidas: number, excluidas: number, facturasDelPeriodo: number): boolean =>
+  incluidas + excluidas === facturasDelPeriodo;
+
 export type ResumenPeriodo = {
   filas: FilaResumen[];
   totales: {

@@ -4,6 +4,7 @@ import { Badge } from "@/components/Badge";
 import { NOMBRE_APP } from "@/lib/config";
 import { getCliente, getClientes, getResumenPeriodo } from "@/lib/datos";
 import { dinero, esMesAnio, nombreMes } from "@/lib/formato";
+import { agruparExclusiones, cuadraConPeriodo } from "@/lib/resumen";
 
 export const metadata = { title: `Resumen del periodo · ${NOMBRE_APP}` };
 
@@ -51,6 +52,9 @@ export default async function ResumenPage({
   }
 
   const { periodo, resumen, excluidas } = datos;
+  // C5: motivos de exclusión con su conteo, y que incluidas + fuera sumen las facturas del periodo.
+  const grupos = agruparExclusiones(excluidas);
+  const cuadra = cuadraConPeriodo(resumen.incluidas, excluidas.length, periodo.facturas);
   const { totales, filas, ajusteNoDesglosado } = resumen;
   const hayIeps = filas.some((f) => f.iepsTrasladado !== 0);
   const tarjetas = [
@@ -164,24 +168,53 @@ export default async function ResumenPage({
         )}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5.5">
-        <h2 className="m-0 text-lg font-semibold">Fuera del resumen</h2>
-        {excluidas.length === 0 ? (
+      <section aria-labelledby="fuera-del-resumen" className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5.5">
+        <div className="flex flex-col gap-1">
+          <h2 id="fuera-del-resumen" className="m-0 text-lg font-semibold">
+            Fuera del resumen · {excluidas.length} de {periodo.facturas}
+          </h2>
+          <p className={`m-0 text-sm ${cuadra ? "text-text-muted" : "font-semibold text-[#B42318]"}`}>
+            {cuadra
+              ? `${periodo.facturas} ${periodo.facturas === 1 ? "factura" : "facturas"} en el periodo = ${resumen.incluidas} ${resumen.incluidas === 1 ? "incluida" : "incluidas"} + ${excluidas.length} fuera del resumen.`
+              : `No cuadra: el periodo tiene ${periodo.facturas} facturas, pero hay ${resumen.incluidas} incluidas y ${excluidas.length} fuera del resumen. Vuelve a cargar la página.`}{" "}
+            No hay duplicadas: un folio fiscal solo puede existir una vez por cliente (RN-02).
+          </p>
+        </div>
+
+        {grupos.length === 0 ? (
           <p className="m-0 text-sm text-text-muted">Todas las facturas del periodo están incluidas.</p>
         ) : (
-          <ul className="m-0 flex flex-col gap-2 p-0 text-[15px]">
-            {excluidas.map((e) => (
-              <li
-                key={e.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#FFF6E6] px-3.5 py-2.5"
-              >
-                <Link href={`/revision/${e.id}`} className="text-text">
-                  {e.descripcion}
-                </Link>
-                <span className="text-sm font-semibold text-warn-soft-text">{e.motivo}</span>
-              </li>
+          <>
+            <ul aria-label="Facturas fuera del resumen por motivo" className="m-0 flex flex-wrap gap-2 p-0">
+              {grupos.map((g) => (
+                <li key={g.motivo} className="list-none">
+                  <a
+                    href={`#motivo-${grupos.indexOf(g)}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#FFF6E6] px-3 py-1.5 text-sm text-warn-soft-text no-underline"
+                  >
+                    <span className="font-semibold">{g.facturas.length}</span> {g.motivo}
+                  </a>
+                </li>
+              ))}
+            </ul>
+
+            {grupos.map((g, i) => (
+              <div key={g.motivo} id={`motivo-${i}`} className="flex scroll-mt-6 flex-col gap-2">
+                <h3 className="m-0 text-[15px] font-semibold">
+                  {g.motivo} · {g.facturas.length === 1 ? "1 factura" : `${g.facturas.length} facturas`}
+                </h3>
+                <ul className="m-0 flex flex-col gap-1.5 p-0 text-[15px]">
+                  {g.facturas.map((e) => (
+                    <li key={e.id} className="list-none rounded-lg bg-[#FFF6E6] px-3.5 py-2.5">
+                      <Link href={`/revision/${e.id}`} className="text-text">
+                        {e.descripcion}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </>
         )}
       </section>
 
