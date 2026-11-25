@@ -192,12 +192,6 @@
   "origen": "palabra clave"
  },
  {
-  "clave": "14111601",
-  "descripcion": "Papel o bolsas o cajas de regalo",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
- },
- {
   "clave": "14111606",
   "descripcion": "Papel para artes o artesanías",
   "categoria": "Gastos de oficina y papelería",
@@ -240,12 +234,6 @@
   "origen": "palabra clave"
  },
  {
-  "clave": "14111704",
-  "descripcion": "Papel higiénico",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
- },
- {
   "clave": "14111818",
   "descripcion": "Papel térmico",
   "categoria": "Gastos de oficina y papelería",
@@ -260,56 +248,74 @@
  {
   "clave": "14121504",
   "descripcion": "Papel de empaque",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de empaque: material de empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121507",
   "descripcion": "Papel inhibidor de la corrosión volátil o vci",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121600",
   "descripcion": "Papel de seda",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121601",
   "descripcion": "Papel crepé sin blanquear",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121602",
   "descripcion": "Papel crepé semi blanqueado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121806",
   "descripcion": "Papel de parafinado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121807",
   "descripcion": "Papel mantequilla",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121808",
   "descripcion": "Papel para congelador",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121809",
   "descripcion": "Papel de enmascarar",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121812",
@@ -320,86 +326,114 @@
  {
   "clave": "14121900",
   "descripcion": "Papel prensa y de offset",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121901",
   "descripcion": "Papel periódico estándar",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121902",
   "descripcion": "Papel periódico de colores",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121903",
   "descripcion": "Papel periódico de alto brillo",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14121904",
   "descripcion": "Papel offset",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122101",
   "descripcion": "Papel kraft súper calandrado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122102",
   "descripcion": "Papel kraft terminado o satinado en máquina",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122103",
   "descripcion": "Papel no recubierto no tratado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122104",
   "descripcion": "Papel crepé no tratado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122105",
   "descripcion": "Papel crepé tratado con látex",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122106",
   "descripcion": "Papel no recubierto tratado con látex",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122107",
   "descripcion": "Papel base corrugado",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de uso industrial (familia 1412 del SAT): materia prima o empaque del negocio, no papelería de oficina."
  },
  {
   "clave": "14122201",
   "descripcion": "Papel para germinación de semillas",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel para germinación de semillas: insumo agrícola."
  },
  {
   "clave": "14122202",
   "descripcion": "Papel para bolsas de te",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel para bolsas de té: insumo de producción."
  },
  {
   "clave": "15101504",
@@ -440,48 +474,46 @@
  {
   "clave": "15131500",
   "descripcion": "Combustible nuclear",
-  "categoria": "Combustible, viáticos y transporte",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Combustible, viáticos y transporte",
+  "motivo": "Combustible nuclear: materia prima industrial, no combustible de vehículos ni viáticos."
  },
  {
   "clave": "26141601",
   "descripcion": "Combustible para conjunto subcrítico",
-  "categoria": "Combustible, viáticos y transporte",
-  "origen": "palabra clave"
- },
- {
-  "clave": "27112153",
-  "descripcion": "Engrapadora de banda",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Combustible, viáticos y transporte",
+  "motivo": "Combustible para conjunto subcrítico (nuclear): materia prima industrial, no combustible de vehículos."
  },
  {
   "clave": "30161502",
   "descripcion": "Papel de colgadura",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Mantenimiento y reparaciones",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel tapiz: acabado del local, no papelería."
  },
  {
   "clave": "41102428",
   "descripcion": "Papel altamente absorbente",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel de laboratorio: insumo de laboratorio, no papelería."
  },
  {
   "clave": "41122603",
   "descripcion": "Papel de lentes para microscopio",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel para lentes de microscopio: insumo de laboratorio, no papelería."
  },
  {
   "clave": "42203605",
   "descripcion": "Software de sistema de archivo de película de rayos x para usos médicos",
-  "categoria": "Equipo de cómputo y software",
-  "origen": "palabra clave"
- },
- {
-  "clave": "42203705",
-  "descripcion": "Impresoras láser en seco para imágenes o reproductores de imágenes para uso médico",
   "categoria": "Equipo de cómputo y software",
   "origen": "palabra clave"
  },
@@ -1484,38 +1516,42 @@
  {
   "clave": "46171634",
   "descripcion": "Papel detector de agentes químicos",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel detector de agentes químicos: insumo de seguridad industrial, no papelería."
  },
  {
   "clave": "48102108",
   "descripcion": "Papel aluminio para envolver alimentos",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel aluminio para alimentos: insumo de servicio de alimentos, no papelería."
  },
  {
   "clave": "48102109",
   "descripcion": "Papel plástico para envolver alimentos",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Película plástica para alimentos: insumo de servicio de alimentos, no papelería."
  },
  {
   "clave": "50211607",
   "descripcion": "Papel para cigarrillos o filtros",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
- },
- {
-  "clave": "52152201",
-  "descripcion": "Papel para forrar repisas",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel para cigarrillos: insumo o mercancía de la industria tabacalera, no papelería."
  },
  {
   "clave": "53141613",
   "descripcion": "Papel calcante",
-  "categoria": "Gastos de oficina y papelería",
-  "origen": "palabra clave"
+  "categoria": "Compras de mercancía o insumos",
+  "origen": "revisión A2",
+  "categoria_anterior": "Gastos de oficina y papelería",
+  "motivo": "Papel calcante de costura (familia 5314, mercería): insumo de confección, no papelería."
  },
  {
   "clave": "60105703",
@@ -2130,12 +2166,6 @@
   "origen": "palabra clave"
  },
  {
-  "clave": "76122400",
-  "descripcion": "Honorarios de disposición y tratamiento de basuras",
-  "categoria": "Honorarios y servicios profesionales",
-  "origen": "palabra clave"
- },
- {
   "clave": "78101605",
   "descripcion": "Servicio de alquiler de carrotanques de ferrocarril",
   "categoria": "Renta de local o equipo",
@@ -2312,8 +2342,10 @@
  {
   "clave": "81112500",
   "descripcion": "Servicios de alquiler o arrendamiento de licencias de software de computador",
-  "categoria": "Renta de local o equipo",
-  "origen": "palabra clave"
+  "categoria": "Equipo de cómputo y software",
+  "origen": "revisión A2",
+  "categoria_anterior": "Renta de local o equipo",
+  "motivo": "Arrendamiento de licencias de software: es software, no renta de local o equipo."
  },
  {
   "clave": "81161700",
@@ -2570,8 +2602,10 @@
  {
   "clave": "90111504",
   "descripcion": "Servicios de alquiler de cabañas",
-  "categoria": "Renta de local o equipo",
-  "origen": "palabra clave"
+  "categoria": "Combustible, viáticos y transporte",
+  "origen": "revisión A2",
+  "categoria_anterior": "Renta de local o equipo",
+  "motivo": "Alquiler de cabañas: hospedaje (viáticos), no renta de local."
  },
  {
   "clave": "93141901",

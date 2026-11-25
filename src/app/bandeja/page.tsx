@@ -247,7 +247,8 @@ export default async function BandejaPage({
       </section>
       <p className="m-0 text-sm text-text-muted">
         Cada concepto se clasifica en este orden: clave asignada a mano,
-        regla por emisor y, por último, sugerencia de la clave del SAT.
+        regla por emisor, regla base y, por último, sugerencia de la clave del SAT.
+        En facturas emitidas solo se proponen categorías de ingreso.
       </p>
     </AppShell>
   );
