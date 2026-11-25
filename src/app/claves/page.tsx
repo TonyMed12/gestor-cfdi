@@ -20,7 +20,8 @@ export default async function ClavesPage() {
         <h1 className="m-0 text-[30px] font-bold">Claves del SAT en tus facturas</h1>
         <p className="m-0 text-[15px] text-text-muted">
           Cada concepto de una factura trae una clave del SAT. Elige a qué categoría pertenece cada
-          una. Las facturas nuevas con esa clave se clasifican solas, y las que ya existen se actualizan.
+          una. Las facturas nuevas con esa clave se clasifican solas y las pendientes de aprobar se
+          actualizan al momento. Las aprobadas conservan la categoría con la que se aprobaron.
         </p>
         <p className="m-0 text-sm text-text-muted">
           {claves.length} claves en uso · {sinCategoria} sin categoría · {porConfirmar} sugeridas sin
