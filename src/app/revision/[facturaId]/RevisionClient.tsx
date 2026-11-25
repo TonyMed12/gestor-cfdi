@@ -102,7 +102,7 @@ export function RevisionClient({ factura, categorias, historial }: {
     conceptos: factura.conceptos.map((c) => {
       const categoria = (c.id && corregidas[c.id] && categoriaPorId.get(corregidas[c.id])) ||
         (c.categoria ? categoriaPorNombre.get(c.categoria) : undefined);
-      return { importe: c.importe, ivaTrasladado: ivaTrasladadoDe(c), deducibleCategoria: categoria?.deducible };
+      return { importe: c.importe, impuestos: c.impuestos, deducibleCategoria: categoria?.deducible };
     }),
   });
   const categoriasNoDeducibles = factura.conceptos.some((c) => c.categoria && categoriaPorNombre.get(c.categoria)?.deducible === false);

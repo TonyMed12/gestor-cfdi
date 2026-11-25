@@ -11,8 +11,8 @@ test("la marca de la factura gana sobre la de la categoría", () => {
 });
 
 const conceptos = [
-  { importe: 1000, ivaTrasladado: 160, deducibleCategoria: true }, // papelería
-  { importe: 500, ivaTrasladado: 80, deducibleCategoria: false }, // gastos no deducibles
+  { importe: 1000, impuestos: [{ tipo: "trasladado", impuesto: "IVA", tasa: 0.16, importe: 160 }], deducibleCategoria: true }, // papelería
+  { importe: 500, impuestos: [{ tipo: "trasladado", impuesto: "IVA", tasa: 0.16, importe: 80 }], deducibleCategoria: false }, // gastos no deducibles
 ];
 
 test("según la categoría: solo el concepto de categoría deducible cuenta", () => {
@@ -41,7 +41,7 @@ test("una factura emitida es ingreso: no tiene deducciones ni IVA acreditable", 
 
 test("caso real: gasolina de 346.19 con IVA de 53.81, deducible por su categoría", () => {
   assert.deepEqual(
-    deduccionesDeFactura({ relacion: "recibida", marca: null, conceptos: [{ importe: 346.19, ivaTrasladado: 53.81, deducibleCategoria: true }] }),
+    deduccionesDeFactura({ relacion: "recibida", marca: null, conceptos: [{ importe: 346.19, impuestos: [{ tipo: "trasladado", impuesto: "IVA", tasa: 0.16, importe: 53.81 }], deducibleCategoria: true }] }),
     { gastoDeducible: 346.19, ivaAcreditable: 53.81, gastoNoDeducible: 0 },
   );
 });

@@ -1,5 +1,7 @@
-// Deducibilidad por factura (A7). Sin dependencias, para poder probarla sola (pruebas/deducibilidad.test.mjs).
-// La usará también el resumen del periodo (C3) cuando se rehaga.
+// Deducibilidad por factura (A7). Se prueba sola en pruebas/deducibilidad.test.mjs.
+// El IVA acreditable usa la regla única de iva.ts (C4).
+// La extensión .ts en la importación permite correr las pruebas con node sin compilar (tsconfig: allowImportingTsExtensions).
+import { ivaAcreditable, type ImpuestoIva } from "./iva.ts";
 
 // Marca de la factura: null = según la categoría de cada concepto; true o false = decisión del contador.
 export type MarcaDeducible = boolean | null;
@@ -11,13 +13,12 @@ export const esDeducible = (marcaFactura: MarcaDeducible | undefined, deducibleC
 
 export type ConceptoDeducible = {
   importe: number;
-  ivaTrasladado: number; // IVA trasladado del concepto
+  impuestos: ImpuestoIva[];
   deducibleCategoria: boolean | undefined;
 };
 
 // Gasto deducible e IVA acreditable de una factura según su deducibilidad.
 // Una factura emitida es un ingreso: no tiene gasto deducible ni IVA acreditable.
-// Solo cuenta la deducibilidad; las reglas de tasa del IVA acreditable son la tarea C4.
 export function deduccionesDeFactura(p: {
   relacion: "emitida" | "recibida";
   marca: MarcaDeducible | undefined;
@@ -29,11 +30,11 @@ export function deduccionesDeFactura(p: {
   let noDeducible = 0;
   for (const c of p.conceptos) {
     // En centavos, para no acumular errores de redondeo.
-    if (esDeducible(p.marca, c.deducibleCategoria)) {
-      deducible += Math.round(c.importe * 100);
-      iva += Math.round(c.ivaTrasladado * 100);
-    } else {
-      noDeducible += Math.round(c.importe * 100);
+    const esDeConcepto = esDeducible(p.marca, c.deducibleCategoria);
+    if (esDeConcepto) deducible += Math.round(c.importe * 100);
+    else noDeducible += Math.round(c.importe * 100);
+    for (const impuesto of c.impuestos) {
+      iva += Math.round(ivaAcreditable({ relacion: p.relacion, deducible: esDeConcepto, impuesto }).importe * 100);
     }
   }
   return { gastoDeducible: deducible / 100, ivaAcreditable: iva / 100, gastoNoDeducible: noDeducible / 100 };

@@ -58,7 +58,7 @@ export default async function ResumenPage({
     { etiqueta: "Gastos", valor: totales.gastos },
     { etiqueta: "Gastos deducibles", valor: totales.gastosDeducibles, nota: "Por la factura o su categoría" },
     { etiqueta: "IVA trasladado", valor: totales.ivaTrasladado, nota: "Cobrado en los ingresos" },
-    { etiqueta: "IVA acreditable", valor: totales.ivaAcreditable, nota: "De gastos deducibles" },
+    { etiqueta: "IVA acreditable", valor: totales.ivaAcreditable, nota: "16 % u 8 % de gastos deducibles" },
     { etiqueta: "Retenciones a favor", valor: totales.retencionesAFavor, nota: "Le retuvieron al cliente" },
     { etiqueta: "Retenciones por enterar", valor: totales.retencionesPorEnterar, nota: "Retuvo el cliente" },
   ];
@@ -112,8 +112,8 @@ export default async function ResumenPage({
           <h2 className="m-0 text-lg font-semibold">Por categoría</h2>
           <p className="m-0 text-sm text-text-muted">
             Importes antes de impuestos. Las notas de crédito restan. Un gasto es deducible si así se marcó la factura en
-            la revisión o, si no se marcó, si su categoría es deducible. IVA acreditable: el IVA de los gastos
-            deducibles.
+            la revisión o, si no se marcó, si su categoría es deducible. IVA acreditable: el IVA trasladado al 16 % u
+            8 % de los gastos deducibles; el IVA a tasa 0 %, exento o a una tasa no vigente no se acredita.
           </p>
         </div>
         {filas.length === 0 ? (

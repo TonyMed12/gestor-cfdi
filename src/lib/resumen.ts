@@ -1,7 +1,9 @@
 // Resumen de un cliente en un periodo (C3, RF-39): ingresos, gastos, IVA y retenciones por categoría.
-// Sin dependencias, para poder probarlo solo (pruebas/resumen.test.mjs). Todo se suma en centavos.
+// Se prueba solo (pruebas/resumen.test.mjs). Todo se suma en centavos.
+// La extensión .ts permite correr las pruebas con node sin compilar (tsconfig: allowImportingTsExtensions).
+import { ivaAcreditable, type ImpuestoIva } from "./iva.ts";
 
-export type ImpuestoResumen = { tipo: string; impuesto: string; tasa: number; importe: number };
+export type ImpuestoResumen = ImpuestoIva;
 export type ConceptoResumen = {
   importe: number;
   categoria: string | null;
@@ -115,9 +117,9 @@ export function calcularResumen(facturas: FacturaResumen[]): ResumenPeriodo {
           desglosado += monto;
           if (i.impuesto === "IVA") {
             fila.ivaTrasladado += signo * monto;
-            // IVA de un gasto deducible (por la marca de la factura o por su categoría, A7).
-            // Las reglas de tasa (exento, tasa 0 %, tasas válidas) son la tarea C4.
-            if (tipo === "Gasto" && c.deducible) fila.ivaAcreditable += signo * monto;
+            // Regla única del IVA acreditable (C4): recibida, deducible y a tasa válida.
+            const acreditable = ivaAcreditable({ relacion: f.relacion, deducible: c.deducible, impuesto: i });
+            fila.ivaAcreditable += signo * centavos(acreditable.importe);
           } else if (i.impuesto === "IEPS") {
             fila.iepsTrasladado += signo * monto;
           }
