@@ -9,6 +9,9 @@ import {
 } from "./categorias-por-defecto";
 import { REGLAS_BASE } from "./reglas-base-claves";
 import type { BusquedaUuid } from "./busqueda";
+import { calcularResumen, type FacturaResumen, type ResumenPeriodo } from "./resumen";
+import { dinero } from "./formato";
+import { esDeducible } from "./deducibilidad";
 
 type FilaCliente = {
   id: string;
@@ -435,6 +438,85 @@ export async function getPeriodosCliente(clienteId: string): Promise<PeriodoClie
     .order("mes_anio", { ascending: false });
   if (error) throw new Error(`No se pudieron leer los periodos: ${error.message}`);
   return (data as unknown as FilaPeriodo[]).map(aPeriodo);
+}
+
+type FilaFacturaResumen = {
+  id: string;
+  tipo_comprobante: string;
+  relacion: "emitida" | "recibida";
+  moneda: string;
+  estado_revision: string;
+  estado_sat: string | null;
+  motivo_exclusion: string | null;
+  deducible: boolean | null;
+  total: string;
+  rfc_emisor: string;
+  nombre_emisor: string | null;
+  rfc_receptor: string;
+  nombre_receptor: string | null;
+  concepto: {
+    importe: string;
+    categoria: { nombre: string; deducible_default: boolean } | null;
+    impuesto: { tipo: string; impuesto: string; tasa: string; importe: string }[];
+  }[];
+};
+
+export type ExclusionDetalle = { id: string; motivo: string; descripcion: string };
+
+// Resumen de un cliente en un periodo (C3), calculado con calcularResumen (src/lib/resumen.ts).
+// La categoría de cada concepto es la que quedó fija al aprobar la factura.
+export async function getResumenPeriodo(
+  clienteId: string,
+  mesAnio: string,
+): Promise<{ periodo: PeriodoCliente; resumen: ResumenPeriodo; excluidas: ExclusionDetalle[] } | undefined> {
+  const supabase = await supabaseServidor();
+  const { data: periodo, error } = await supabase
+    .from("periodo")
+    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .eq("cliente_id", clienteId)
+    .eq("mes_anio", mesAnio)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer el periodo: ${error.message}`);
+  if (!periodo) return undefined;
+
+  const { data, error: errorFacturas } = await supabase
+    .from("factura")
+    .select(
+      "id, tipo_comprobante, relacion, moneda, estado_revision, estado_sat, motivo_exclusion, deducible, total, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, concepto(importe, categoria(nombre, deducible_default), impuesto(tipo, impuesto, tasa, importe))",
+    )
+    .eq("periodo_id", periodo.id)
+    .order("emitido_en");
+  if (errorFacturas) throw new Error(`No se pudo calcular el resumen: ${errorFacturas.message}`);
+  const filas = data as unknown as FilaFacturaResumen[];
+
+  const facturas: FacturaResumen[] = filas.map((f) => ({
+    id: f.id,
+    tipoComprobante: f.tipo_comprobante,
+    relacion: f.relacion,
+    moneda: f.moneda,
+    estadoRevision: f.estado_revision,
+    estadoSat: f.estado_sat,
+    motivoExclusion: f.motivo_exclusion,
+    total: Number(f.total),
+    conceptos: f.concepto.map((c) => ({
+      importe: Number(c.importe),
+      categoria: c.categoria?.nombre ?? null,
+      // A7: la marca de la factura gana sobre la de la categoría.
+      deducible: esDeducible(f.deducible, c.categoria?.deducible_default),
+      impuestos: c.impuesto.map((i) => ({ tipo: i.tipo, impuesto: i.impuesto, tasa: Number(i.tasa), importe: Number(i.importe) })),
+    })),
+  }));
+  const resumen = calcularResumen(facturas);
+
+  const porId = new Map(filas.map((f) => [f.id, f]));
+  const excluidas = resumen.excluidas.map((e) => {
+    const f = porId.get(e.id)!;
+    const recibida = f.relacion === "recibida";
+    const contraparte = (recibida ? f.nombre_emisor : f.nombre_receptor) ?? (recibida ? f.rfc_emisor : f.rfc_receptor);
+    return { ...e, descripcion: `${contraparte} · ${dinero(f.total, f.moneda)}` };
+  });
+
+  return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas };
 }
 
 // Un periodo del cliente con sus facturas, de la más reciente a la más antigua.
