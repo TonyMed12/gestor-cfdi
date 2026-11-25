@@ -1,7 +1,12 @@
 import type { Cliente, Concepto, Factura, Impuesto } from "./types";
 import { supabaseServidor } from "./supabase-servidor";
 import { supabaseAdmin } from "./supabase-admin";
-import { categoriaSugeridaDeClave } from "./categorias-por-defecto";
+import {
+  categoriaDeIngresoDeClave,
+  categoriaSugeridaDeClave,
+  elegirCategoria,
+  esCategoriaDeIngreso,
+} from "./categorias-por-defecto";
 import { REGLAS_BASE } from "./reglas-base-claves";
 
 type FilaCliente = {
@@ -325,8 +330,9 @@ async function mapaReglasEmisor(): Promise<Map<string, string>> {
   );
 }
 
-// Cada concepto se clasifica solo, en este orden:
-// 1) clave asignada a mano · 2) regla por emisor · 3) sugerencia por división del SAT · 4) sin clasificar.
+// Cada concepto se clasifica solo, con el orden de elegirCategoria (categorias-por-defecto.ts):
+// clave asignada a mano, regla por emisor, regla base, sugerencia por la clave y sin clasificar,
+// tomando solo categorías de ingreso en emitidas y de gasto en recibidas.
 function conCategoria(
   factura: Factura,
   porClave: Map<string, string>,
@@ -341,14 +347,14 @@ function conCategoria(
     if (factura.estadoRevision === "clasificado") {
       return { ...c, categoria: c.categoriaGuardada ?? undefined, origen: undefined };
     }
-    const manual = porClave.get(c.claveProdServ);
-    if (manual) return { ...c, categoria: manual, origen: "regla" };
-    if (deEmisor) return { ...c, categoria: deEmisor, origen: "emisor" };
-    const base = REGLAS_BASE[c.claveProdServ];
-    if (base) return { ...c, categoria: base, origen: "base" };
-    const sugerida = categoriaSugeridaDeClave(c.claveProdServ);
-    if (sugerida) return { ...c, categoria: sugerida, origen: "division" };
-    return { ...c, categoria: undefined, origen: undefined };
+    const { categoria, origen } = elegirCategoria({
+      clave: c.claveProdServ,
+      relacion: factura.relacion,
+      manual: porClave.get(c.claveProdServ),
+      deEmisor,
+      base: REGLAS_BASE[c.claveProdServ],
+    });
+    return { ...c, categoria, origen };
   });
 
   const sinCategoria = factura.conceptos.filter((c) => !c.categoria).length;
@@ -426,6 +432,9 @@ export type ClaveEnUso = {
   descripcion: string;
   categoriaId: string | null;
   porDefecto: boolean;
+  emitidas: number; // conceptos con esta clave en facturas emitidas (ingresos)
+  recibidas: number; // conceptos con esta clave en facturas recibidas (gastos)
+  aviso?: string; // la categoría asignada a mano no aplica a una parte de las facturas
 };
 
 // Solo las claves que aparecen en facturas del despacho, no las 52 mil del catálogo.
@@ -436,24 +445,57 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
   const claves = usadas.map((u) => u.clave as string);
   if (claves.length === 0) return [];
 
-  const [catalogo, mapeo] = await Promise.all([
+  const [catalogo, mapeo, usos, categorias] = await Promise.all([
     supabase.from("cat_clave_prod_serv").select("clave, descripcion").in("clave", claves),
     supabase.from("clave_categoria").select("clave, categoria_id").in("clave", claves),
+    supabase.from("concepto").select("clave_prod_serv, factura!inner(relacion)").in("clave_prod_serv", claves),
+    getCategorias(),
   ]);
-  if (catalogo.error || mapeo.error) throw new Error("No se pudo leer el mapeo de claves");
+  if (catalogo.error || mapeo.error || usos.error) throw new Error("No se pudo leer el mapeo de claves");
 
   const descripciones = new Map(catalogo.data.map((c) => [c.clave, c.descripcion]));
   const asignadas = new Map(mapeo.data.map((m) => [m.clave, m.categoria_id]));
-  const idPorNombre = new Map((await getCategorias()).map((c) => [c.nombre, c.id]));
+  const idPorNombre = new Map(categorias.map((c) => [c.nombre, c.id]));
+  const nombrePorId = new Map(categorias.map((c) => [c.id, c.nombre]));
+  // Cuántos conceptos de cada clave están en facturas emitidas y en recibidas.
+  const conteo = new Map<string, { emitidas: number; recibidas: number }>();
+  for (const u of usos.data as unknown as { clave_prod_serv: string; factura: { relacion: string } }[]) {
+    const c = conteo.get(u.clave_prod_serv) ?? { emitidas: 0, recibidas: 0 };
+    if (u.factura.relacion === "emitida") c.emitidas++;
+    else c.recibidas++;
+    conteo.set(u.clave_prod_serv, c);
+  }
+
   return claves.map((clave) => {
+    const { emitidas, recibidas } = conteo.get(clave) ?? { emitidas: 0, recibidas: 0 };
     const asignada = asignadas.get(clave) ?? null;
-    const sugerida = REGLAS_BASE[clave] ?? categoriaSugeridaDeClave(clave);
+    // Si la clave solo aparece en emitidas, la sugerencia es de ingreso; si no, la de gasto de siempre.
+    const sugerida =
+      emitidas > 0 && recibidas === 0
+        ? categoriaDeIngresoDeClave(clave)
+        : (REGLAS_BASE[clave] ?? categoriaSugeridaDeClave(clave));
     const sugeridaId = sugerida ? (idPorNombre.get(sugerida) ?? null) : null;
+
+    // La categoría asignada a mano solo aplica a las facturas de su lado (ingreso o gasto).
+    let aviso: string | undefined;
+    const nombreAsignada = asignada ? nombrePorId.get(asignada) : undefined;
+    if (nombreAsignada) {
+      const deIngreso = esCategoriaDeIngreso(nombreAsignada);
+      if (!deIngreso && emitidas > 0) {
+        aviso = `Es una categoría de gasto: no se aplica a los ${emitidas} conceptos de facturas emitidas con esta clave, que se proponen como «${categoriaDeIngresoDeClave(clave)}».`;
+      } else if (deIngreso && recibidas > 0) {
+        aviso = `Es una categoría de ingreso: no se aplica a los ${recibidas} conceptos de facturas recibidas con esta clave.`;
+      }
+    }
+
     return {
       clave,
       descripcion: descripciones.get(clave) ?? "Clave no encontrada en el catálogo",
       categoriaId: asignada ?? sugeridaId,
       porDefecto: asignada === null && sugeridaId !== null,
+      emitidas,
+      recibidas,
+      aviso,
     };
   });
 }

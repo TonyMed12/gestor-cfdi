@@ -10,6 +10,8 @@ export default async function ClavesPage() {
   const [claves, categorias] = await Promise.all([getClavesEnUso(), getCategorias()]);
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const sinCategoria = claves.filter((c) => c.categoriaId === null).length;
+  const porConfirmar = claves.filter((c) => c.porDefecto).length;
+  const conAviso = claves.filter((c) => c.aviso).length;
 
   return (
     <AppShell active="/claves">
@@ -21,7 +23,12 @@ export default async function ClavesPage() {
           una. Las facturas nuevas con esa clave se clasifican solas, y las que ya existen se actualizan.
         </p>
         <p className="m-0 text-sm text-text-muted">
-          {claves.length} claves en uso · {sinCategoria} sin categoría
+          {claves.length} claves en uso · {sinCategoria} sin categoría · {porConfirmar} sugeridas sin
+          confirmar{conAviso > 0 && ` · ${conAviso} con aviso`}
+        </p>
+        <p className="m-0 text-sm text-text-muted">
+          En facturas emitidas (ingresos) solo se usan categorías de ingreso, y en recibidas (gastos),
+          solo de gasto.
         </p>
       </header>
 
@@ -31,6 +38,7 @@ export default async function ClavesPage() {
             <tr className="text-left text-[13px] text-text-muted">
               <th className="px-5 py-3.5 font-semibold">Clave</th>
               <th className="px-3 py-3.5 font-semibold">Descripción del SAT</th>
+              <th className="px-3 py-3.5 font-semibold">Aparece en</th>
               <th className="px-3 py-3.5 font-semibold">Categoría</th>
             </tr>
           </thead>
@@ -39,16 +47,24 @@ export default async function ClavesPage() {
               <tr key={c.clave} className="border-t border-[#EEF1F4]">
                 <td className="px-5 py-3.5 font-mono text-sm">{c.clave}</td>
                 <td className="px-3 py-3.5">{c.descripcion}</td>
+                <td className="px-3 py-3.5 text-sm text-text-muted">
+                  {c.recibidas > 0 && <div>{c.recibidas} {c.recibidas === 1 ? "recibida" : "recibidas"}</div>}
+                  {c.emitidas > 0 && <div>{c.emitidas} {c.emitidas === 1 ? "emitida" : "emitidas"}</div>}
+                </td>
                 <td className="px-3 py-3.5">
                   {puedeEditar ? (
                     <SelectorCategoria
                       clave={c.clave}
                       categoriaId={c.categoriaId}
                       sugerida={c.porDefecto}
+                      aviso={c.aviso}
                       opciones={categorias.map((k) => ({ id: k.id, nombre: k.nombre }))}
                     />
                   ) : (
-                    categorias.find((k) => k.id === c.categoriaId)?.nombre ?? "Sin categoría"
+                    <>
+                      {categorias.find((k) => k.id === c.categoriaId)?.nombre ?? "Sin categoría"}
+                      {c.aviso && <div className="text-[13px] text-warn-soft-text">{c.aviso}</div>}
+                    </>
                   )}
                 </td>
               </tr>
