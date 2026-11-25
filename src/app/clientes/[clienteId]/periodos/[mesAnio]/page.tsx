@@ -46,6 +46,12 @@ export default async function PeriodoClientePage({ params }: Parametros) {
         <p className="m-0 text-[15px] text-text-muted">
           {cliente.razonSocial} · <span className="font-mono text-sm">{cliente.rfc}</span>
         </p>
+        <Link
+          href={`/resumen?cliente=${cliente.id}&periodo=${periodo.mesAnio}`}
+          className="mt-2 inline-flex h-10 w-fit items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+        >
+          Ver resumen del periodo
+        </Link>
       </header>
 
       <section aria-label="Facturas del periodo por estado" className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4">
