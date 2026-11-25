@@ -1,48 +1,71 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { NOMBRE_APP } from "@/lib/config";
-import { getCliente, getClientes, getResumenPeriodo } from "@/lib/datos";
+import { getCliente, getClientes, getPeriodosPorCliente, getResumenPeriodo } from "@/lib/datos";
 import { dinero, esMesAnio, nombreMes } from "@/lib/formato";
 import { agruparExclusiones, cuadraConPeriodo } from "@/lib/resumen";
+import { SelectorResumen } from "./SelectorResumen";
 
 export const metadata = { title: `Resumen del periodo · ${NOMBRE_APP}` };
 
 const pesos = (n: number) => dinero(String(n), "MXN");
 
 // Resumen de un cliente en un periodo (C3): /resumen?cliente=<id>&periodo=AAAA-MM.
-// Se llega desde Clientes → Ver periodos → un periodo → Ver resumen. El selector en esta pantalla es la tarea C6.
+// El selector de cliente y periodo (C6) cambia la URL; la página se vuelve a calcular con esa selección.
 export default async function ResumenPage({
   searchParams,
 }: {
   searchParams: Promise<{ cliente?: string; periodo?: string }>;
 }) {
   const { cliente: clienteId, periodo: mesAnio } = await searchParams;
+  const [clientes, periodosPorCliente] = await Promise.all([getClientes(), getPeriodosPorCliente()]);
   const cliente = clienteId && /^[0-9a-f-]{36}$/i.test(clienteId) ? await getCliente(clienteId) : undefined;
+
+  // Con cliente y sin periodo, se abre su periodo más reciente y queda en la URL.
+  const recientes = cliente ? (periodosPorCliente[cliente.id] ?? []) : [];
+  if (cliente && !mesAnio && recientes.length > 0) {
+    redirect(`/resumen?cliente=${cliente.id}&periodo=${recientes[0].mesAnio}`);
+  }
+
   const datos = cliente && mesAnio && esMesAnio(mesAnio) ? await getResumenPeriodo(cliente.id, mesAnio) : undefined;
+  const selector = (
+    <SelectorResumen
+      clientes={clientes.map((c) => ({ id: c.id, razonSocial: c.razonSocial, periodos: periodosPorCliente[c.id] ?? [] }))}
+      clienteId={cliente?.id ?? ""}
+      periodo={datos ? datos.periodo.mesAnio : ""}
+    />
+  );
 
   if (!cliente || !datos) {
-    const clientes = await getClientes();
     return (
       <AppShell active="/resumen">
         <header className="flex flex-col gap-1">
           <h1 className="m-0 text-[30px] font-bold">Resumen del periodo</h1>
           <p className="m-0 text-[15px] text-text-muted">
-            {clienteId || mesAnio
-              ? "No se encontró ese cliente o ese periodo. Elige uno de la lista."
-              : "Elige un cliente y luego uno de sus periodos para ver su resumen."}
+            {cliente && recientes.length === 0
+              ? `${cliente.razonSocial} aún no tiene periodos: se crean al subir su primera factura.`
+              : clienteId || mesAnio
+                ? "No se encontró ese cliente o ese periodo. Elige uno con el selector."
+                : "Elige un cliente y uno de sus periodos para ver su resumen."}
           </p>
         </header>
+        {selector}
         <section className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
           {clientes.map((c) => (
             <Link
               key={c.id}
-              href={`/clientes/${c.id}/periodos`}
+              href={`/resumen?cliente=${c.id}`}
               className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5 no-underline hover:border-accent focus-visible:border-accent"
             >
               <span className="font-semibold text-text">{c.razonSocial}</span>
               <span className="font-mono text-sm text-text-muted">{c.rfc}</span>
-              <span className="text-sm font-semibold">Ver sus periodos</span>
+              <span className="text-sm font-semibold">
+                {periodosPorCliente[c.id]?.length
+                  ? `Resumen de ${nombreMes(periodosPorCliente[c.id][0].mesAnio)}`
+                  : "Aún sin periodos"}
+              </span>
             </Link>
           ))}
           {clientes.length === 0 && <p className="m-0 text-sm text-text-muted">Aún no hay clientes.</p>}
@@ -90,6 +113,8 @@ export default async function ResumenPage({
           facturas aprobadas que no están canceladas.
         </p>
       </header>
+
+      {selector}
 
       <section aria-label="Totales del periodo" className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">
         {tarjetas.map((t) => (

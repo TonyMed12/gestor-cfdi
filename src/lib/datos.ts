@@ -519,6 +519,22 @@ export async function getResumenPeriodo(
   return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas };
 }
 
+export type OpcionPeriodo = { mesAnio: string; estado: "abierto" | "cerrado" };
+
+// Periodos de todos los clientes del despacho, del más reciente al más antiguo (C6: selector del resumen).
+// Una sola consulta; RLS limita a tu despacho.
+export async function getPeriodosPorCliente(): Promise<Record<string, OpcionPeriodo[]>> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("periodo")
+    .select("cliente_id, mes_anio, estado")
+    .order("mes_anio", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer los periodos: ${error.message}`);
+  const porCliente: Record<string, OpcionPeriodo[]> = {};
+  for (const p of data) (porCliente[p.cliente_id] ??= []).push({ mesAnio: p.mes_anio, estado: p.estado });
+  return porCliente;
+}
+
 // Un periodo del cliente con sus facturas, de la más reciente a la más antigua.
 export async function getPeriodoCliente(
   clienteId: string,
