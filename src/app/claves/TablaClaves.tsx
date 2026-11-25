@@ -104,7 +104,7 @@ export function TablaClaves({
       )}
 
       <section className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <table className="w-full min-w-[760px] border-collapse text-[15px]">
+        <table className="w-full min-w-[920px] border-collapse text-[15px]">
           <thead>
             <tr className="text-left text-[13px] text-text-muted">
               {puedeEditar && (
@@ -122,6 +122,16 @@ export function TablaClaves({
               <th className={`${puedeEditar ? "px-3" : "px-5"} py-3.5 font-semibold`}>Clave</th>
               <th className="px-3 py-3.5 font-semibold">Descripción del SAT</th>
               <th className="px-3 py-3.5 font-semibold">Aparece en</th>
+              <th className="px-3 py-3.5 text-right font-semibold">
+                <abbr title="Facturas por revisar o por confirmar: se actualizan si cambias la categoría" className="no-underline">
+                  Pendientes
+                </abbr>
+              </th>
+              <th className="px-3 py-3.5 text-right font-semibold">
+                <abbr title="Facturas aprobadas: conservan su categoría aunque cambies la clave" className="no-underline">
+                  Aprobadas
+                </abbr>
+              </th>
               <th className="px-3 py-3.5 font-semibold">Categoría</th>
             </tr>
           </thead>
@@ -149,6 +159,8 @@ export function TablaClaves({
                   {c.recibidas > 0 && <div>{c.recibidas} {c.recibidas === 1 ? "recibida" : "recibidas"}</div>}
                   {c.emitidas > 0 && <div>{c.emitidas} {c.emitidas === 1 ? "emitida" : "emitidas"}</div>}
                 </td>
+                <td className="px-3 py-3.5 text-right font-semibold">{c.pendientes}</td>
+                <td className="px-3 py-3.5 text-right text-text-muted">{c.aprobadas}</td>
                 <td className="px-3 py-3.5">
                   {puedeEditar ? (
                     // La key cambia cuando cambia la categoría guardada: así el selector toma el valor nuevo

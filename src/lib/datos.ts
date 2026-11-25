@@ -583,8 +583,10 @@ export type ClaveEnUso = {
   descripcion: string;
   categoriaId: string | null;
   porDefecto: boolean;
-  emitidas: number; // conceptos con esta clave en facturas emitidas (ingresos)
-  recibidas: number; // conceptos con esta clave en facturas recibidas (gastos)
+  emitidas: number; // facturas emitidas (ingresos) con esta clave
+  recibidas: number; // facturas recibidas (gastos) con esta clave
+  pendientes: number; // facturas por revisar o por confirmar: cambian si cambia la clave (A5)
+  aprobadas: number; // facturas aprobadas: conservan su categoría (A5)
   aviso?: string; // la categoría asignada a mano no aplica a una parte de las facturas
 };
 
@@ -599,7 +601,10 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
   const [catalogo, mapeo, usos, categorias] = await Promise.all([
     supabase.from("cat_clave_prod_serv").select("clave, descripcion").in("clave", claves),
     supabase.from("clave_categoria").select("clave, categoria_id").in("clave", claves),
-    supabase.from("concepto").select("clave_prod_serv, factura!inner(relacion)").in("clave_prod_serv", claves),
+    supabase
+      .from("concepto")
+      .select("clave_prod_serv, factura!inner(id, relacion, estado_revision)")
+      .in("clave_prod_serv", claves),
     getCategorias(),
   ]);
   if (catalogo.error || mapeo.error || usos.error) throw new Error("No se pudo leer el mapeo de claves");
@@ -608,17 +613,34 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
   const asignadas = new Map(mapeo.data.map((m) => [m.clave, m.categoria_id]));
   const idPorNombre = new Map(categorias.map((c) => [c.nombre, c.id]));
   const nombrePorId = new Map(categorias.map((c) => [c.id, c.nombre]));
-  // Cuántos conceptos de cada clave están en facturas emitidas y en recibidas.
-  const conteo = new Map<string, { emitidas: number; recibidas: number }>();
-  for (const u of usos.data as unknown as { clave_prod_serv: string; factura: { relacion: string } }[]) {
-    const c = conteo.get(u.clave_prod_serv) ?? { emitidas: 0, recibidas: 0 };
-    if (u.factura.relacion === "emitida") c.emitidas++;
-    else c.recibidas++;
-    conteo.set(u.clave_prod_serv, c);
+  // Facturas distintas de cada clave (una factura con varios conceptos de la misma clave cuenta una vez):
+  // emitidas y recibidas, y pendientes y aprobadas (A5). Las excluidas no cuentan como pendientes ni aprobadas.
+  type Conteo = { emitidas: Set<string>; recibidas: Set<string>; pendientes: Set<string>; aprobadas: Set<string> };
+  const conteos = new Map<string, Conteo>();
+  for (const u of usos.data as unknown as {
+    clave_prod_serv: string;
+    factura: { id: string; relacion: string; estado_revision: string };
+  }[]) {
+    const c = conteos.get(u.clave_prod_serv) ?? {
+      emitidas: new Set<string>(), recibidas: new Set<string>(), pendientes: new Set<string>(), aprobadas: new Set<string>(),
+    };
+    (u.factura.relacion === "emitida" ? c.emitidas : c.recibidas).add(u.factura.id);
+    if (u.factura.estado_revision === "clasificado") c.aprobadas.add(u.factura.id);
+    else if (u.factura.estado_revision === "por_revisar" || u.factura.estado_revision === "por_confirmar") {
+      c.pendientes.add(u.factura.id);
+    }
+    conteos.set(u.clave_prod_serv, c);
   }
+  const conteo = new Map(
+    [...conteos].map(([clave, c]) => [
+      clave,
+      { emitidas: c.emitidas.size, recibidas: c.recibidas.size, pendientes: c.pendientes.size, aprobadas: c.aprobadas.size },
+    ]),
+  );
 
   return claves.map((clave) => {
-    const { emitidas, recibidas } = conteo.get(clave) ?? { emitidas: 0, recibidas: 0 };
+    const { emitidas, recibidas, pendientes, aprobadas } =
+      conteo.get(clave) ?? { emitidas: 0, recibidas: 0, pendientes: 0, aprobadas: 0 };
     const asignada = asignadas.get(clave) ?? null;
     // Si la clave solo aparece en emitidas, la sugerencia es de ingreso; si no, la de gasto de siempre.
     const sugerida =
@@ -633,9 +655,9 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
     if (nombreAsignada) {
       const deIngreso = esCategoriaDeIngreso(nombreAsignada);
       if (!deIngreso && emitidas > 0) {
-        aviso = `Es una categoría de gasto: no se aplica a los ${emitidas} conceptos de facturas emitidas con esta clave, que se proponen como «${categoriaDeIngresoDeClave(clave)}».`;
+        aviso = `Es una categoría de gasto: no se aplica a ${emitidas === 1 ? "la factura emitida" : `las ${emitidas} facturas emitidas`} con esta clave, que se proponen como «${categoriaDeIngresoDeClave(clave)}».`;
       } else if (deIngreso && recibidas > 0) {
-        aviso = `Es una categoría de ingreso: no se aplica a los ${recibidas} conceptos de facturas recibidas con esta clave.`;
+        aviso = `Es una categoría de ingreso: no se aplica a ${recibidas === 1 ? "la factura recibida" : `las ${recibidas} facturas recibidas`} con esta clave.`;
       }
     }
 
@@ -646,6 +668,8 @@ export async function getClavesEnUso(): Promise<ClaveEnUso[]> {
       porDefecto: asignada === null && sugeridaId !== null,
       emitidas,
       recibidas,
+      pendientes,
+      aprobadas,
       aviso,
     };
   });
