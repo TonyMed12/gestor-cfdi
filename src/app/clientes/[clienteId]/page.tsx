@@ -13,14 +13,18 @@ import {
   getArchivos,
   getCategoriasDeCliente,
   getCliente,
+  ESTADOS_ARCHIVO,
+  type FiltrosArchivos,
   getEnlaceEnvio,
   getPerfil,
   getPeriodosCliente,
   getResumenCategoriasCliente,
   LIMITE_RESULTADOS_UUID,
+  TIPOS_ARCHIVO,
 } from "@/lib/datos";
 import { dinero } from "@/lib/formato";
 import { CategoriasDelCliente, EditarCliente, ReconsultarPeriodo } from "./AjustesCliente";
+import { FiltrosArchivos as BarraFiltrosArchivos } from "./FiltrosArchivos";
 import { EnlaceEnvio } from "./EnlaceEnvio";
 import { ReintentarLectura } from "./ReintentarLectura";
 import { SubirArchivos } from "./SubirArchivos";
@@ -51,10 +55,10 @@ export default async function ClienteDetallePage({
   searchParams,
 }: {
   params: Promise<{ clienteId: string }>;
-  searchParams: Promise<{ uuid?: string; pagina?: string }>;
+  searchParams: Promise<{ uuid?: string; pagina?: string; estado?: string; tipo?: string; orden?: string }>;
 }) {
   const { clienteId } = await params;
-  const { uuid, pagina } = await searchParams;
+  const { uuid, pagina, estado, tipo, orden } = await searchParams;
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   // Búsqueda por folio fiscal (B1), solo entre las facturas de este cliente.
@@ -63,7 +67,13 @@ export default async function ClienteDetallePage({
   const buscando = busqueda.tipo === "completo" || busqueda.tipo === "fragmento";
   const resultadosUuid = buscando ? await buscarFacturasPorUuid(busqueda, cliente.id) : [];
   // B4: de 50 en 50, los más recientes primero.
-  const { archivos, pagina: paginaArchivos } = await getArchivos(clienteId, leerPagina(pagina));
+  // B2: filtros de la lista de archivos; lo que no es válido se ignora.
+  const filtrosArchivos: FiltrosArchivos = {
+    estado: (ESTADOS_ARCHIVO as readonly string[]).includes(estado ?? "") ? (estado as FiltrosArchivos["estado"]) : undefined,
+    tipo: (TIPOS_ARCHIVO as readonly string[]).includes(tipo ?? "") ? (tipo as FiltrosArchivos["tipo"]) : undefined,
+    antiguos: orden === "antiguos" || undefined,
+  };
+  const { archivos, pagina: paginaArchivos } = await getArchivos(clienteId, leerPagina(pagina), filtrosArchivos);
   const resumen = await getResumenCategoriasCliente(clienteId);
   const perfil = await getPerfil();
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
@@ -171,6 +181,7 @@ export default async function ClienteDetallePage({
             valor={textoBusqueda}
             error={busqueda.tipo === "invalida" ? busqueda.error : undefined}
           />
+          {!buscando && <BarraFiltrosArchivos clienteId={cliente.id} filtros={filtrosArchivos} />}
         </div>
         {buscando ? (
           <div className="p-4">
@@ -247,11 +258,19 @@ export default async function ClienteDetallePage({
           </table>
           {archivos.length === 0 && (
             <p className="m-0 px-5 py-8 text-center text-sm text-text-muted">
-              Aún no hay archivos de este cliente.
+              {filtrosArchivos.estado || filtrosArchivos.tipo
+                ? "Ningún archivo coincide con estos filtros."
+                : "Aún no hay archivos de este cliente."}
             </p>
           )}
         </div>
-        <Paginacion ruta={`/clientes/${cliente.id}`} pagina={paginaArchivos} ancla="archivos" nombre="archivos" />
+        <Paginacion
+          ruta={`/clientes/${cliente.id}`}
+          parametros={{ estado: filtrosArchivos.estado, tipo: filtrosArchivos.tipo, orden: filtrosArchivos.antiguos ? "antiguos" : undefined }}
+          pagina={paginaArchivos}
+          ancla="archivos"
+          nombre="archivos"
+        />
         </>
         )}
       </section>

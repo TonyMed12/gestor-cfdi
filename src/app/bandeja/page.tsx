@@ -6,9 +6,18 @@ import { Paginacion } from "@/components/Paginacion";
 import { interpretarBusquedaUuid } from "@/lib/busqueda";
 import { leerPagina } from "@/lib/paginacion";
 import { NOMBRE_APP } from "@/lib/config";
-import { buscarFacturasPorUuid, getFacturasPorRevisar, getPerfil, LIMITE_RESULTADOS_UUID } from "@/lib/datos";
+import {
+  buscarFacturasPorUuid,
+  getClientes,
+  getFacturasPorRevisar,
+  getPerfil,
+  getPeriodosPorCliente,
+  LIMITE_RESULTADOS_UUID,
+} from "@/lib/datos";
+import { aParametros, hayFiltros, leerFiltros, type Parametros } from "@/lib/filtros";
 import { getPeriodoActual } from "@/lib/mock-data";
 import { AprobacionEnLote } from "./AprobacionEnLote";
+import { FiltrosBandeja } from "./FiltrosBandeja";
 
 export const metadata = { title: `Bandeja de revisión · ${NOMBRE_APP}` };
 
@@ -27,12 +36,20 @@ const TIPOS = [
   { codigo: "N", etiqueta: "Nómina" },
 ];
 
+// /bandeja con los filtros dados (sin vacíos). Cambiar de tipo vuelve a la primera página.
+const enlaceBandeja = (parametros: Record<string, string | undefined>) => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(parametros)) if (v) q.set(k, v);
+  const texto = q.toString();
+  return texto ? `/bandeja?${texto}` : "/bandeja";
+};
+
 export default async function BandejaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string; uuid?: string; pagina?: string }>;
+  searchParams: Promise<Parametros & { uuid?: string; pagina?: string }>;
 }) {
-  const { tipo, uuid, pagina } = await searchParams;
+  const { uuid, pagina, ...parametros } = await searchParams;
   const textoBusqueda = (uuid ?? "").trim();
   const busqueda = interpretarBusquedaUuid(textoBusqueda);
   const buscador = (
@@ -58,15 +75,27 @@ export default async function BandejaPage({
     );
   }
 
-  const tipoActivo = TIPOS.some((t) => t.codigo === tipo) ? (tipo ?? "") : "";
-  // B4: de 50 en 50, ordenadas por prioridad entre todas las pendientes (no solo dentro de la página).
-  const [bandeja, perfil] = await Promise.all([
-    getFacturasPorRevisar({ tipo: tipoActivo || undefined, pagina: leerPagina(pagina) }),
+  // B2: filtros generales de la URL, validados. B4: de 50 en 50, en el orden elegido entre todas las que coinciden.
+  const { filtros, avisos } = leerFiltros(parametros);
+  const tipoActivo = filtros.tipo ?? "";
+  const [bandeja, perfil, clientes, periodosPorCliente] = await Promise.all([
+    getFacturasPorRevisar({ filtros, pagina: leerPagina(pagina) }),
     getPerfil(),
+    getClientes(),
+    getPeriodosPorCliente(),
   ]);
   // Solo administrador y contador aprueban (RN-05); el auxiliar ve la bandeja sin casillas.
   const puedeDecidir = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const { facturas, porIa, porRegla } = bandeja;
+  // Periodos para el filtro: los del cliente elegido o, sin cliente, todos los meses del despacho.
+  const periodos = [
+    ...new Set(
+      (filtros.cliente ? (periodosPorCliente[filtros.cliente] ?? []) : Object.values(periodosPorCliente).flat()).map(
+        (p) => p.mesAnio,
+      ),
+    ),
+  ].sort((a, b) => b.localeCompare(a));
+  const conFiltros = hayFiltros(filtros);
 
   return (
     <AppShell active="/bandeja">
@@ -76,18 +105,25 @@ export default async function BandejaPage({
         </span>
         <h1 className="m-0 text-[30px] font-bold">Bandeja de revisión</h1>
         <p className="m-0 text-[15px] text-text-muted">
-          Ninguna clasificación queda firme hasta que la apruebes. Ordenada
-          por prioridad.
+          Ninguna clasificación queda firme hasta que la apruebes.{" "}
+          {filtros.orden === "prioridad" ? "Ordenada por prioridad." : "Ordenada como elegiste en los filtros."}
         </p>
       </header>
 
       {buscador}
 
+      <FiltrosBandeja
+        filtros={filtros}
+        clientes={clientes.map((c) => ({ id: c.id, razonSocial: c.razonSocial }))}
+        periodos={periodos}
+        avisos={avisos}
+      />
+
       <nav aria-label="Filtrar por tipo de comprobante" className="flex flex-wrap gap-2">
         {TIPOS.map((t) => (
           <Link
             key={t.codigo || "todos"}
-            href={t.codigo ? `/bandeja?tipo=${t.codigo}` : "/bandeja"}
+            href={enlaceBandeja({ ...aParametros(filtros), tipo: t.codigo || undefined })}
             aria-current={t.codigo === tipoActivo ? "page" : undefined}
             className={`h-9 inline-flex items-center rounded-full border px-3 text-sm no-underline ${
               t.codigo === tipoActivo ? "border-accent bg-accent font-semibold text-white" : "border-[#C9D1DA] bg-surface"
@@ -110,7 +146,7 @@ export default async function BandejaPage({
             aria-selected="true"
             className="h-10 rounded-full border border-accent bg-accent px-3.5 text-sm font-semibold text-white"
           >
-            Todas · {bandeja.pagina.total}
+            {conFiltros ? "Con estos filtros" : "Todas"} · {bandeja.pagina.total}
           </button>
           <button
             type="button"
@@ -129,12 +165,6 @@ export default async function BandejaPage({
             Por regla · {porRegla}
           </button>
         </div>
-        <label className="flex items-center gap-2 text-sm text-text-muted">
-          Cliente
-          <select className="h-10 rounded-lg border border-[#C9D1DA] bg-surface px-2.5 text-sm">
-            <option>Todos los clientes</option>
-          </select>
-        </label>
       </div>
 
       <AprobacionEnLote activo={puedeDecidir && facturas.length > 0}>
@@ -263,11 +293,11 @@ export default async function BandejaPage({
         </table>
         {facturas.length === 0 && (
           <p className="m-0 px-5 py-8 text-center text-sm text-text-muted">
-            No hay facturas por revisar.
+            {conFiltros ? "Ninguna factura por revisar coincide con estos filtros." : "No hay facturas por revisar."}
           </p>
         )}
       </section>
-      <Paginacion ruta="/bandeja" parametros={{ tipo: tipoActivo || undefined }} pagina={bandeja.pagina} />
+      <Paginacion ruta="/bandeja" parametros={aParametros(filtros)} pagina={bandeja.pagina} />
       </AprobacionEnLote>
       <p className="m-0 text-sm text-text-muted">
         Cada concepto se clasifica en este orden: clave asignada a mano,

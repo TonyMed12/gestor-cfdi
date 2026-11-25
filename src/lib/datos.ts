@@ -1,5 +1,6 @@
 import type { Cliente, Concepto, Factura, Impuesto, OrigenClasificacion } from "./types";
 import { describirPagina, paginaDe, rangoDePagina, type Pagina } from "./paginacion";
+import { ordenarBandeja, type FiltrosBandeja } from "./filtros";
 import { supabaseServidor } from "./supabase-servidor";
 import { supabaseAdmin } from "./supabase-admin";
 import {
@@ -104,18 +105,34 @@ type FilaFactura = {
 const unaFila = <T>(relacion: T | T[] | null | undefined): T | null =>
   Array.isArray(relacion) ? (relacion[0] ?? null) : (relacion ?? null);
 
+export const ESTADOS_ARCHIVO = ["recibido", "leyendo", "por_revisar", "clasificado", "error"] as const;
+export const TIPOS_ARCHIVO = ["xml", "pdf", "imagen", "zip"] as const;
+export type FiltrosArchivos = {
+  estado?: (typeof ESTADOS_ARCHIVO)[number];
+  tipo?: (typeof TIPOS_ARCHIVO)[number];
+  antiguos?: boolean; // true: los más antiguos primero
+};
+
 // Archivos del cliente, de 50 en 50 (B4): la base devuelve solo la página y el total.
-export async function getArchivos(clienteId: string, paginaPedida = 1): Promise<{ archivos: ArchivoCliente[]; pagina: Pagina }> {
+// Filtros por estado y tipo de archivo y orden por fecha de recepción (B2).
+export async function getArchivos(
+  clienteId: string,
+  paginaPedida = 1,
+  filtros: FiltrosArchivos = {},
+): Promise<{ archivos: ArchivoCliente[]; pagina: Pagina }> {
   const supabase = await supabaseServidor();
   const { desde, hasta } = rangoDePagina(Math.max(1, paginaPedida));
-  const { data, error, count } = await supabase
+  let consulta = supabase
     .from("archivo")
     .select(
       "id, tipo, estado, ruta_original, recibido_en, motivo_error, factura(uuid_fiscal, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, total, moneda, estado_sat)",
       { count: "exact" },
     )
-    .eq("cliente_id", clienteId)
-    .order("recibido_en", { ascending: false })
+    .eq("cliente_id", clienteId);
+  if (filtros.estado) consulta = consulta.eq("estado", filtros.estado);
+  if (filtros.tipo) consulta = consulta.eq("tipo", filtros.tipo);
+  const { data, error, count } = await consulta
+    .order("recibido_en", { ascending: Boolean(filtros.antiguos) })
     .order("id")
     .range(desde, hasta);
   if (error) throw new Error(`No se pudieron leer los archivos: ${error.message}`);
@@ -295,24 +312,40 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
 
 export type PaginaBandeja = { facturas: Factura[]; pagina: Pagina; porIa: number; porRegla: number };
 
-// Bandeja de revisión (RF-31) ordenada por prioridad y paginada de 50 en 50 (B4). `tipo` filtra por tipo de comprobante.
-export async function getFacturasPorRevisar(opciones: { tipo?: string; pagina?: number } = {}): Promise<PaginaBandeja> {
+// Bandeja de revisión (RF-31) paginada de 50 en 50 (B4), con los filtros generales y el orden de B2 (RF-08).
+// Los filtros se aplican en la base; el orden por prioridad se calcula aquí sobre las que coinciden.
+export async function getFacturasPorRevisar(
+  opciones: { filtros?: FiltrosBandeja; pagina?: number } = {},
+): Promise<PaginaBandeja> {
   const supabase = await supabaseServidor();
-  const { tipo, pagina: paginaPedida = 1 } = opciones;
+  const { filtros = { orden: "prioridad" }, pagina: paginaPedida = 1 } = opciones;
 
-  // 1) Todas las pendientes, pero solo lo necesario para ordenarlas por prioridad: claves de sus conceptos,
-  //    contraparte y fecha. Sin nombres ni impuestos: los datos completos se piden solo para la página (paso 4).
+  // 1) Todas las pendientes que coinciden con los filtros, pero solo lo necesario para ordenarlas: claves de sus
+  //    conceptos, contraparte, fecha y total. Los datos completos se piden solo para la página (paso 4).
   let consulta = supabase
     .from("factura")
-    .select("id, cliente_id, relacion, rfc_emisor, rfc_receptor, tipo_comprobante, concepto(clave_prod_serv)")
+    .select(
+      `id, cliente_id, relacion, rfc_emisor, rfc_receptor, tipo_comprobante, emitido_en, total, concepto(clave_prod_serv)${
+        filtros.periodo ? ", periodo!inner(mes_anio)" : ""
+      }`,
+    )
     .eq("estado_revision", "por_revisar")
     .order("emitido_en", { ascending: false });
-  if (tipo) consulta = consulta.eq("tipo_comprobante", tipo);
+  if (filtros.cliente) consulta = consulta.eq("cliente_id", filtros.cliente);
+  if (filtros.periodo) consulta = consulta.eq("periodo.mes_anio", filtros.periodo);
+  // emisor y receptor ya vienen limpios (solo letras, dígitos, & y Ñ): ver leerFiltros.
+  if (filtros.emisor) consulta = consulta.ilike("rfc_emisor", `%${filtros.emisor}%`);
+  if (filtros.receptor) consulta = consulta.ilike("rfc_receptor", `%${filtros.receptor}%`);
+  if (filtros.tipo) consulta = consulta.eq("tipo_comprobante", filtros.tipo);
+  if (filtros.estadoSat === "sin_consultar") consulta = consulta.is("estado_sat", null);
+  else if (filtros.estadoSat) consulta = consulta.eq("estado_sat", filtros.estadoSat);
+  if (filtros.montoMin !== undefined) consulta = consulta.gte("total", filtros.montoMin);
+  if (filtros.montoMax !== undefined) consulta = consulta.lte("total", filtros.montoMax);
   const { data, error } = await consulta;
   if (error) throw new Error(`No se pudieron leer las facturas: ${error.message}`);
   const ligeras = data as unknown as {
     id: string; cliente_id: string; relacion: "emitida" | "recibida"; rfc_emisor: string; rfc_receptor: string;
-    tipo_comprobante: string; concepto: { clave_prod_serv: string }[];
+    tipo_comprobante: string; emitido_en: string; total: string; concepto: { clave_prod_serv: string }[];
   }[];
   const contraparteDe = (f: { relacion: string; rfc_emisor: string; rfc_receptor: string }) =>
     f.relacion === "recibida" ? f.rfc_emisor : f.rfc_receptor;
@@ -326,7 +359,10 @@ export async function getFacturasPorRevisar(opciones: { tipo?: string; pagina?: 
   ]);
 
   // 3) Prioridad (RF-31) de todas: primero lo que bloquea el resumen, luego lo que conviene mirar.
-  type Prioridad = { id: string; alta: boolean; motivo?: string; emisorNuevo: boolean; origen?: OrigenClasificacion };
+  type Prioridad = {
+    id: string; alta: boolean; motivo?: string; emisorNuevo: boolean; origen?: OrigenClasificacion;
+    fecha: string; total: number;
+  };
   const prioridades: Prioridad[] = ligeras.map((f) => {
     const deEmisor = porEmisor.get(contraparteDe(f));
     const elegidas = f.concepto.map((c) =>
@@ -340,10 +376,12 @@ export async function getFacturasPorRevisar(opciones: { tipo?: string; pagina?: 
       motivo: sinCategoria ? "Hay conceptos sin categoría" : emisorNuevo ? "Primera factura de este proveedor" : undefined,
       emisorNuevo,
       origen: origenDeFactura(new Set(elegidas.map((e) => e.origen))),
+      fecha: f.emitido_en,
+      total: Number(f.total),
     };
   });
-  // Orden estable: las de prioridad alta primero; dentro de cada grupo, las más recientes primero.
-  const ordenadas = [...prioridades].sort((a, b) => Number(b.alta) - Number(a.alta));
+  // Por prioridad (las altas primero y, en cada grupo, las más recientes) o el orden que eligió el contador (B2).
+  const ordenadas = ordenarBandeja(prioridades, filtros.orden);
 
   // 4) La página: datos completos solo de sus facturas (B4).
   const pagina = describirPagina(paginaPedida, ordenadas.length);
