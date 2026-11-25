@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
-import { mesDeFecha } from "@/lib/formato";
 import type { Factura, OrigenClasificacion } from "@/lib/types";
 import { aprobarFactura, rechazarFactura } from "./acciones";
 
@@ -318,7 +317,7 @@ export function RevisionClient({ factura, categorias, historial }: {
                   Volver a la bandeja
                 </Link>
                 <Link
-                  href={`/resumen?cliente=${factura.clienteId}&periodo=${mesDeFecha(factura.fechaEmision)}`}
+                  href="/resumen"
                   className="inline-flex h-11 items-center rounded-lg bg-accent px-3.5 font-semibold text-white no-underline hover:bg-accent-hover"
                 >
                   Ver resumen del periodo

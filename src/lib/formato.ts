@@ -17,12 +17,6 @@ const MESES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-// Periodo (AAAA-MM) de una fecha de emisión guardada en la base. Igual que mes_de_periodo en
-// supabase/20-periodos.sql: la fecha del CFDI se guarda como hora del centro de México (-06:00).
-export function mesDeFecha(iso: string): string {
-  return new Date(new Date(iso).getTime() - 6 * 3600 * 1000).toISOString().slice(0, 7);
-}
-
 // "2026-10" → "octubre 2026". Sin Date, para que la zona horaria no cambie el mes.
 export function nombreMes(mesAnio: string): string {
   if (!esMesAnio(mesAnio)) return mesAnio;
