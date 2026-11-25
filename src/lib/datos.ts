@@ -8,6 +8,7 @@ import {
   esCategoriaDeIngreso,
 } from "./categorias-por-defecto";
 import { REGLAS_BASE } from "./reglas-base-claves";
+import type { BusquedaUuid } from "./busqueda";
 
 type FilaCliente = {
   id: string;
@@ -308,6 +309,60 @@ export async function getFacturasPorRevisar(): Promise<Factura[]> {
   });
   // Stable sort: las de prioridad alta primero; dentro de cada grupo, las más recientes primero.
   return facturas.sort((a, b) => Number(b.prioridad === "alta") - Number(a.prioridad === "alta"));
+}
+
+export type ResultadoUuid = {
+  id: string;
+  clienteId: string;
+  cliente: string;
+  uuid: string;
+  relacion: "emitida" | "recibida";
+  contraparte: string;
+  contraparteRfc: string;
+  fecha: string;
+  total: string;
+  moneda: string;
+  estadoRevision: string;
+  estadoSat: string | null;
+};
+
+export const LIMITE_RESULTADOS_UUID = 50;
+
+// Facturas del despacho cuyo folio fiscal coincide (B1), en cualquier estado de revisión.
+// Un UUID completo se busca exacto; un fragmento, como parte del folio. Con clienteId, solo de ese cliente.
+export async function buscarFacturasPorUuid(busqueda: BusquedaUuid, clienteId?: string): Promise<ResultadoUuid[]> {
+  if (busqueda.tipo !== "completo" && busqueda.tipo !== "fragmento") return [];
+  const supabase = await supabaseServidor();
+  let consulta = supabase
+    .from("factura")
+    .select("id, cliente_id, uuid_fiscal, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, emitido_en, total, moneda, estado_revision, estado_sat, clientes(razon_social)")
+    .order("emitido_en", { ascending: false })
+    .limit(LIMITE_RESULTADOS_UUID);
+  consulta =
+    busqueda.tipo === "completo"
+      ? consulta.eq("uuid_fiscal", busqueda.uuid)
+      : consulta.like("uuid_fiscal", `%${busqueda.fragmento}%`);
+  if (clienteId) consulta = consulta.eq("cliente_id", clienteId);
+  const { data, error } = await consulta;
+  if (error) throw new Error(`No se pudo buscar el folio fiscal: ${error.message}`);
+  return data.map((f) => {
+    const recibida = f.relacion === "recibida";
+    const cliente = unaFila(f.clientes as { razon_social: string } | { razon_social: string }[] | null);
+    return {
+      id: f.id,
+      clienteId: f.cliente_id,
+      cliente: cliente?.razon_social ?? "",
+      uuid: f.uuid_fiscal,
+      relacion: recibida ? "recibida" : "emitida",
+      contraparte: (recibida ? f.nombre_emisor : f.nombre_receptor) ?? (recibida ? f.rfc_emisor : f.rfc_receptor),
+      contraparteRfc: recibida ? f.rfc_emisor : f.rfc_receptor,
+      fecha: f.emitido_en,
+      total: f.total,
+      moneda: f.moneda,
+      estadoRevision: f.estado_revision,
+      estadoSat: f.estado_sat,
+    };
+  });
 }
 
 // Clave → nombre de la categoría que el contador asignó en este despacho.

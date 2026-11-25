@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { BuscadorUuid, ResultadosUuid } from "@/components/BuscadorUuid";
+import { interpretarBusquedaUuid } from "@/lib/busqueda";
 import { NOMBRE_APP } from "@/lib/config";
-import { getFacturasPorRevisar } from "@/lib/datos";
+import { buscarFacturasPorUuid, getFacturasPorRevisar, LIMITE_RESULTADOS_UUID } from "@/lib/datos";
 import { getPeriodoActual } from "@/lib/mock-data";
 
 export const metadata = { title: `Bandeja de revisión · ${NOMBRE_APP}` };
@@ -22,8 +24,37 @@ const TIPOS = [
   { codigo: "N", etiqueta: "Nómina" },
 ];
 
-export default async function BandejaPage({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
-  const { tipo } = await searchParams;
+export default async function BandejaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string; uuid?: string }>;
+}) {
+  const { tipo, uuid } = await searchParams;
+  const textoBusqueda = (uuid ?? "").trim();
+  const busqueda = interpretarBusquedaUuid(textoBusqueda);
+  const buscador = (
+    <BuscadorUuid
+      accion="/bandeja"
+      valor={textoBusqueda}
+      error={busqueda.tipo === "invalida" ? busqueda.error : undefined}
+    />
+  );
+
+  // Con una búsqueda válida, la bandeja muestra solo los resultados (en cualquier estado de revisión).
+  if (busqueda.tipo === "completo" || busqueda.tipo === "fragmento") {
+    const resultados = await buscarFacturasPorUuid(busqueda);
+    return (
+      <AppShell active="/bandeja">
+        <header className="flex flex-col gap-1">
+          <span className="text-sm text-text-muted">Todos los clientes</span>
+          <h1 className="m-0 text-[30px] font-bold">Bandeja de revisión</h1>
+        </header>
+        {buscador}
+        <ResultadosUuid resultados={resultados} busqueda={textoBusqueda.toUpperCase()} limite={LIMITE_RESULTADOS_UUID} />
+      </AppShell>
+    );
+  }
+
   const tipoActivo = TIPOS.some((t) => t.codigo === tipo) ? (tipo ?? "") : "";
   const todas = await getFacturasPorRevisar();
   const facturas = tipoActivo ? todas.filter((f) => f.tipoComprobante === tipoActivo) : todas;
@@ -44,6 +75,8 @@ export default async function BandejaPage({ searchParams }: { searchParams: Prom
           por prioridad.
         </p>
       </header>
+
+      {buscador}
 
       <nav aria-label="Filtrar por tipo de comprobante" className="flex flex-wrap gap-2">
         {TIPOS.map((t) => (

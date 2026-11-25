@@ -2,9 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
+import { BuscadorUuid, ResultadosUuid } from "@/components/BuscadorUuid";
+import { interpretarBusquedaUuid } from "@/lib/busqueda";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
 import { NOMBRE_APP } from "@/lib/config";
-import { getArchivos, getCategoriasDeCliente, getCliente, getEnlaceEnvio, getPerfil, getResumenCategoriasCliente } from "@/lib/datos";
+import {
+  buscarFacturasPorUuid,
+  getArchivos,
+  getCategoriasDeCliente,
+  getCliente,
+  getEnlaceEnvio,
+  getPerfil,
+  getResumenCategoriasCliente,
+  LIMITE_RESULTADOS_UUID,
+} from "@/lib/datos";
 import { dinero } from "@/lib/formato";
 import { CategoriasDelCliente, EditarCliente, ReconsultarMes } from "./AjustesCliente";
 import { EnlaceEnvio } from "./EnlaceEnvio";
@@ -34,12 +45,20 @@ const tipoLabel: Record<string, string> = { xml: "XML", pdf: "PDF", imagen: "Ima
 
 export default async function ClienteDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ clienteId: string }>;
+  searchParams: Promise<{ uuid?: string }>;
 }) {
   const { clienteId } = await params;
+  const { uuid } = await searchParams;
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
+  // Búsqueda por folio fiscal (B1), solo entre las facturas de este cliente.
+  const textoBusqueda = (uuid ?? "").trim();
+  const busqueda = interpretarBusquedaUuid(textoBusqueda);
+  const buscando = busqueda.tipo === "completo" || busqueda.tipo === "fragmento";
+  const resultadosUuid = buscando ? await buscarFacturasPorUuid(busqueda, cliente.id) : [];
   const archivos = await getArchivos(clienteId);
   const resumen = await getResumenCategoriasCliente(clienteId);
   const perfil = await getPerfil();
@@ -120,10 +139,25 @@ export default async function ClienteDetallePage({
 
       {puedeEditar && <EnlaceEnvio clienteId={cliente.id} enlaceInicial={enlace} />}
 
-      <section className="flex flex-col rounded-xl border border-border bg-surface">
-        <div className="border-b border-border px-5 py-4.5">
+      <section id="archivos" className="flex flex-col rounded-xl border border-border bg-surface">
+        <div className="flex flex-col gap-4 border-b border-border px-5 py-4.5">
           <h2 className="m-0 text-lg font-semibold">Archivos del cliente</h2>
+          <BuscadorUuid
+            accion={`/clientes/${cliente.id}#archivos`}
+            valor={textoBusqueda}
+            error={busqueda.tipo === "invalida" ? busqueda.error : undefined}
+          />
         </div>
+        {buscando ? (
+          <div className="p-4">
+            <ResultadosUuid
+              resultados={resultadosUuid}
+              busqueda={textoBusqueda.toUpperCase()}
+              limite={LIMITE_RESULTADOS_UUID}
+              mostrarCliente={false}
+            />
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-[15px]">
             <thead>
@@ -148,7 +182,7 @@ export default async function ClienteDetallePage({
                         <div className="text-[13px] text-text-muted">
                           {a.factura.emisor} → {a.factura.receptor} ·{" "}
                           {dinero(a.factura.total, a.factura.moneda)} ·{" "}
-                          <span className="font-mono">{a.factura.uuid.slice(0, 8)}</span> · SAT:{" "}
+                          <span className="font-mono">{a.factura.uuid}</span> · SAT:{" "}
                           {a.factura.estadoSat ? ESTADO_SAT[a.factura.estadoSat].texto : "sin consultar"}
                         </div>
                       )}
@@ -192,6 +226,7 @@ export default async function ClienteDetallePage({
             </p>
           )}
         </div>
+        )}
       </section>
     </AppShell>
   );
