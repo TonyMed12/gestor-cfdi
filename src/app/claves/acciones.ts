@@ -44,3 +44,46 @@ export async function guardarClaveCategoria(
   revalidatePath("/claves");
   return {};
 }
+
+// No se exporta: un archivo "use server" solo puede exportar funciones asíncronas.
+const MAXIMO_CLAVES_EN_LOTE = 500;
+
+// Asigna la misma categoría a varias claves en un solo paso (A4). Se guardan juntas: o quedan todas o ninguna.
+// El trigger de clave_categoria (scripts 11 y 16) actualiza las facturas pendientes; las aprobadas no cambian.
+export async function guardarClavesCategoria(
+  claves: string[],
+  categoriaId: string,
+): Promise<{ error?: string; asignadas?: number }> {
+  const unicas = [...new Set(claves)];
+  if (unicas.length === 0) return { error: "Selecciona al menos una clave." };
+  if (unicas.length > MAXIMO_CLAVES_EN_LOTE) {
+    return { error: `Selecciona como máximo ${MAXIMO_CLAVES_EN_LOTE} claves a la vez.` };
+  }
+  if (!unicas.every((c) => /^\d{8}$/.test(c))) return { error: "Hay una clave del SAT no válida." };
+  if (!categoriaId) return { error: "Elige la categoría que quieres asignar." };
+
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Inicia sesión de nuevo." };
+
+  const { data: yo } = await supabase
+    .from("usuario")
+    .select("despacho_id, rol")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!yo || !["administrador", "contador"].includes(yo.rol)) {
+    return { error: "Solo el administrador o el contador pueden clasificar claves." };
+  }
+
+  // RLS (script 11) también revisa que la categoría sea del despacho.
+  const { error } = await supabase
+    .from("clave_categoria")
+    .upsert(
+      unicas.map((clave) => ({ despacho_id: yo.despacho_id, clave, categoria_id: categoriaId })),
+      { onConflict: "despacho_id,clave" },
+    );
+  if (error) return { error: "No se pudo guardar la categoría de las claves seleccionadas." };
+
+  revalidatePath("/claves");
+  return { asignadas: unicas.length };
+}
