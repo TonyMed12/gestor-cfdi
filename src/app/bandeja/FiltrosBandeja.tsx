@@ -87,14 +87,15 @@ export function FiltrosBandeja({
           </select>
         </label>
         <label className={etiqueta}>
-          RFC del emisor
+          RFC o nombre del emisor
           <input
             name="emisor"
             defaultValue={filtros.emisor ?? ""}
-            placeholder="Completo o una parte"
+            placeholder="Por ejemplo HUGO ROJAS o ROTH84"
+            title="El RFC o el nombre del proveedor, completo o una parte; sin importar mayúsculas"
             autoComplete="off"
             spellCheck={false}
-            className={`${campo} font-mono uppercase placeholder:font-sans placeholder:normal-case`}
+            className={`${campo} uppercase placeholder:normal-case`}
           />
         </label>
         <label className={etiqueta}>

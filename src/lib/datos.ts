@@ -333,8 +333,12 @@ export async function getFacturasPorRevisar(
     .order("emitido_en", { ascending: false });
   if (filtros.cliente) consulta = consulta.eq("cliente_id", filtros.cliente);
   if (filtros.periodo) consulta = consulta.eq("periodo.mes_anio", filtros.periodo);
-  // emisor y receptor ya vienen limpios (solo letras, dígitos, & y Ñ): ver leerFiltros.
-  if (filtros.emisor) consulta = consulta.ilike("rfc_emisor", `%${filtros.emisor}%`);
+  // emisor y receptor ya vienen limpios (ver leerFiltros): sin %, _, comas, paréntesis ni comillas.
+  // B3: el emisor se busca por RFC o por nombre, sin distinguir mayúsculas (ilike). El valor va entre comillas
+  // dentro de .or() para que los espacios y los puntos del nombre ("J. GREGORIO") no rompan el filtro.
+  if (filtros.emisor) {
+    consulta = consulta.or(`rfc_emisor.ilike."%${filtros.emisor}%",nombre_emisor.ilike."%${filtros.emisor}%"`);
+  }
   if (filtros.receptor) consulta = consulta.ilike("rfc_receptor", `%${filtros.receptor}%`);
   if (filtros.tipo) consulta = consulta.eq("tipo_comprobante", filtros.tipo);
   if (filtros.estadoSat === "sin_consultar") consulta = consulta.is("estado_sat", null);

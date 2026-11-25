@@ -30,10 +30,27 @@ test("lo que no es válido se ignora y se avisa", () => {
   assert.equal(avisos.length, 3);
 });
 
-test("un RFC solo conserva letras, dígitos, & y Ñ: nada raro llega a la consulta", () => {
-  assert.equal(leerFiltros({ emisor: "ab%c,d.e*(f)" }).filtros.emisor, "ABCDEF");
-  assert.equal(leerFiltros({ emisor: "%%%" }).filtros.emisor, undefined);
-  assert.equal(leerFiltros({ emisor: "ñañ&01" }).filtros.emisor, "ÑAÑ&01");
+test("el RFC del receptor solo conserva letras, dígitos, & y Ñ: nada raro llega a la consulta", () => {
+  assert.equal(leerFiltros({ receptor: "ab%c,d.e*(f)" }).filtros.receptor, "ABCDEF");
+  assert.equal(leerFiltros({ receptor: "%%%" }).filtros.receptor, undefined);
+  assert.equal(leerFiltros({ receptor: "ñañ&01" }).filtros.receptor, "ÑAÑ&01");
+});
+
+test("B3: el emisor acepta RFC o nombre, en mayúsculas o minúsculas", () => {
+  assert.equal(leerFiltros({ emisor: "roth840308hua" }).filtros.emisor, "ROTH840308HUA");
+  assert.equal(leerFiltros({ emisor: "hugo rojas" }).filtros.emisor, "HUGO ROJAS");
+  assert.equal(leerFiltros({ emisor: "Hugo Rojas" }).filtros.emisor, leerFiltros({ emisor: "HUGO ROJAS" }).filtros.emisor);
+  assert.equal(leerFiltros({ emisor: "  j.  gregorio  " }).filtros.emisor, "J. GREGORIO"); // espacios de más
+  assert.equal(leerFiltros({ emisor: "Martínez" }).filtros.emisor, "MARTÍNEZ"); // acentos
+  assert.equal(leerFiltros({ emisor: "ñ & co-op" }).filtros.emisor, "Ñ & CO-OP");
+});
+
+test("B3: del nombre del emisor se descarta lo que podría alterar la consulta", () => {
+  // % y _ son comodines de la búsqueda; comas, paréntesis y comillas romperían el filtro de Supabase.
+  assert.equal(leerFiltros({ emisor: 'hugo%_rojas,(x)"' }).filtros.emisor, "HUGOROJASX");
+  assert.equal(leerFiltros({ emisor: "nombre_emisor.eq.x" }).filtros.emisor, "NOMBREEMISOR.EQ.X");
+  assert.equal(leerFiltros({ emisor: "%,()" }).filtros.emisor, undefined);
+  assert.ok(leerFiltros({ emisor: "x".repeat(200) }).filtros.emisor.length <= 80);
 });
 
 test("si el mínimo es mayor que el máximo, se intercambian con aviso", () => {

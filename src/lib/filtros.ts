@@ -11,8 +11,8 @@ export type Orden = (typeof ORDENES)[number];
 export type FiltrosBandeja = {
   cliente?: string; // id del cliente
   periodo?: string; // AAAA-MM
-  emisor?: string; // RFC completo o parte, en mayúsculas
-  receptor?: string;
+  emisor?: string; // RFC o nombre del emisor, completo o parte, en mayúsculas (B3)
+  receptor?: string; // RFC completo o parte, en mayúsculas
   tipo?: (typeof TIPOS_COMPROBANTE)[number];
   estadoSat?: (typeof ESTADOS_SAT)[number];
   montoMin?: number;
@@ -32,7 +32,20 @@ const limpiarRfc = (texto?: string): string | undefined => {
   return limpio.length > 0 ? limpio : undefined;
 };
 
-const leerMonto = (texto?: string): number | undefined | "invalido" => {
+// RFC o nombre del emisor (B3): letras (con acentos y Ñ), dígitos, espacios, punto, guion y &. Cualquier otro
+// carácter (%, _, comas, paréntesis, comillas…) se descarta, así nada raro llega al filtro de la consulta.
+// Se guarda en mayúsculas; la búsqueda no distingue mayúsculas de minúsculas.
+const limpiarRfcONombre = (texto?: string): string | undefined => {
+  const limpio = (texto ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9ÁÉÍÓÚÜÑ&.\- ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+  return limpio.length > 0 ? limpio : undefined;
+};
+
+const leerMonto =(texto?: string): number | undefined | "invalido" => {
   const limpio = (texto ?? "").replace(/[\s,$]/g, "");
   if (limpio === "") return undefined;
   const n = Number(limpio);
@@ -52,7 +65,7 @@ export function leerFiltros(p: Parametros): { filtros: FiltrosBandeja; avisos: s
     if (MES.test(p.periodo)) filtros.periodo = p.periodo;
     else avisos.push("El periodo debe tener el formato AAAA-MM.");
   }
-  filtros.emisor = limpiarRfc(p.emisor);
+  filtros.emisor = limpiarRfcONombre(p.emisor);
   filtros.receptor = limpiarRfc(p.receptor);
   if (p.tipo && (TIPOS_COMPROBANTE as readonly string[]).includes(p.tipo)) filtros.tipo = p.tipo as FiltrosBandeja["tipo"];
   if (p.sat && (ESTADOS_SAT as readonly string[]).includes(p.sat)) filtros.estadoSat = p.sat as FiltrosBandeja["estadoSat"];
