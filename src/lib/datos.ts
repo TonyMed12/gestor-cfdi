@@ -311,7 +311,8 @@ export async function getFacturasPorRevisar(): Promise<Factura[]> {
   return facturas.sort((a, b) => Number(b.prioridad === "alta") - Number(a.prioridad === "alta"));
 }
 
-export type ResultadoUuid = {
+// Una factura en un listado (búsqueda por folio, facturas de un periodo): solo lo que se muestra en la fila.
+export type FacturaListado = {
   id: string;
   clienteId: string;
   cliente: string;
@@ -326,16 +327,54 @@ export type ResultadoUuid = {
   estadoSat: string | null;
 };
 
+const SELECCION_LISTADO =
+  "id, cliente_id, uuid_fiscal, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, emitido_en, total, moneda, estado_revision, estado_sat, clientes(razon_social)";
+
+type FilaListado = {
+  id: string;
+  cliente_id: string;
+  uuid_fiscal: string;
+  relacion: string;
+  rfc_emisor: string;
+  nombre_emisor: string | null;
+  rfc_receptor: string;
+  nombre_receptor: string | null;
+  emitido_en: string;
+  total: string;
+  moneda: string;
+  estado_revision: string;
+  estado_sat: string | null;
+  clientes: { razon_social: string } | { razon_social: string }[] | null;
+};
+
+const aFacturaListado = (f: FilaListado): FacturaListado => {
+  const recibida = f.relacion === "recibida";
+  return {
+    id: f.id,
+    clienteId: f.cliente_id,
+    cliente: unaFila(f.clientes)?.razon_social ?? "",
+    uuid: f.uuid_fiscal,
+    relacion: recibida ? "recibida" : "emitida",
+    contraparte: (recibida ? f.nombre_emisor : f.nombre_receptor) ?? (recibida ? f.rfc_emisor : f.rfc_receptor),
+    contraparteRfc: recibida ? f.rfc_emisor : f.rfc_receptor,
+    fecha: f.emitido_en,
+    total: f.total,
+    moneda: f.moneda,
+    estadoRevision: f.estado_revision,
+    estadoSat: f.estado_sat,
+  };
+};
+
 export const LIMITE_RESULTADOS_UUID = 50;
 
 // Facturas del despacho cuyo folio fiscal coincide (B1), en cualquier estado de revisión.
 // Un UUID completo se busca exacto; un fragmento, como parte del folio. Con clienteId, solo de ese cliente.
-export async function buscarFacturasPorUuid(busqueda: BusquedaUuid, clienteId?: string): Promise<ResultadoUuid[]> {
+export async function buscarFacturasPorUuid(busqueda: BusquedaUuid, clienteId?: string): Promise<FacturaListado[]> {
   if (busqueda.tipo !== "completo" && busqueda.tipo !== "fragmento") return [];
   const supabase = await supabaseServidor();
   let consulta = supabase
     .from("factura")
-    .select("id, cliente_id, uuid_fiscal, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, emitido_en, total, moneda, estado_revision, estado_sat, clientes(razon_social)")
+    .select(SELECCION_LISTADO)
     .order("emitido_en", { ascending: false })
     .limit(LIMITE_RESULTADOS_UUID);
   consulta =
@@ -345,24 +384,81 @@ export async function buscarFacturasPorUuid(busqueda: BusquedaUuid, clienteId?: 
   if (clienteId) consulta = consulta.eq("cliente_id", clienteId);
   const { data, error } = await consulta;
   if (error) throw new Error(`No se pudo buscar el folio fiscal: ${error.message}`);
-  return data.map((f) => {
-    const recibida = f.relacion === "recibida";
-    const cliente = unaFila(f.clientes as { razon_social: string } | { razon_social: string }[] | null);
-    return {
-      id: f.id,
-      clienteId: f.cliente_id,
-      cliente: cliente?.razon_social ?? "",
-      uuid: f.uuid_fiscal,
-      relacion: recibida ? "recibida" : "emitida",
-      contraparte: (recibida ? f.nombre_emisor : f.nombre_receptor) ?? (recibida ? f.rfc_emisor : f.rfc_receptor),
-      contraparteRfc: recibida ? f.rfc_emisor : f.rfc_receptor,
-      fecha: f.emitido_en,
-      total: f.total,
-      moneda: f.moneda,
-      estadoRevision: f.estado_revision,
-      estadoSat: f.estado_sat,
-    };
-  });
+  return (data as unknown as FilaListado[]).map(aFacturaListado);
+}
+
+export type ConteoRevision = { porRevisar: number; aprobadas: number; excluidas: number; porConfirmar: number };
+
+export type PeriodoCliente = {
+  id: string;
+  mesAnio: string;
+  estado: "abierto" | "cerrado";
+  cerradoEn: string | null;
+  facturas: number;
+  conteo: ConteoRevision;
+};
+
+const contarPorEstado = (estados: string[]): ConteoRevision => ({
+  porRevisar: estados.filter((e) => e === "por_revisar").length,
+  aprobadas: estados.filter((e) => e === "clasificado").length,
+  excluidas: estados.filter((e) => e === "excluido").length,
+  porConfirmar: estados.filter((e) => e === "por_confirmar").length,
+});
+
+type FilaPeriodo = {
+  id: string;
+  mes_anio: string;
+  estado: "abierto" | "cerrado";
+  cerrado_en: string | null;
+  factura: { estado_revision: string }[];
+};
+
+const aPeriodo = (p: FilaPeriodo): PeriodoCliente => ({
+  id: p.id,
+  mesAnio: p.mes_anio,
+  estado: p.estado,
+  cerradoEn: p.cerrado_en,
+  facturas: p.factura.length,
+  conteo: contarPorEstado(p.factura.map((f) => f.estado_revision)),
+});
+
+// Periodos mensuales del cliente (C2), del más reciente al más antiguo, con cuántas facturas tiene cada uno.
+// Los crea la base al guardar cada factura (supabase/20-periodos.sql).
+export async function getPeriodosCliente(clienteId: string): Promise<PeriodoCliente[]> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase
+    .from("periodo")
+    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .eq("cliente_id", clienteId)
+    .order("mes_anio", { ascending: false });
+  if (error) throw new Error(`No se pudieron leer los periodos: ${error.message}`);
+  return (data as unknown as FilaPeriodo[]).map(aPeriodo);
+}
+
+// Un periodo del cliente con sus facturas, de la más reciente a la más antigua.
+export async function getPeriodoCliente(
+  clienteId: string,
+  mesAnio: string,
+): Promise<{ periodo: PeriodoCliente; facturas: FacturaListado[] } | undefined> {
+  const supabase = await supabaseServidor();
+  const { data: periodo, error } = await supabase
+    .from("periodo")
+    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .eq("cliente_id", clienteId)
+    .eq("mes_anio", mesAnio)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer el periodo: ${error.message}`);
+  if (!periodo) return undefined;
+  const { data: facturas, error: errorFacturas } = await supabase
+    .from("factura")
+    .select(SELECCION_LISTADO)
+    .eq("periodo_id", periodo.id)
+    .order("emitido_en", { ascending: false });
+  if (errorFacturas) throw new Error(`No se pudieron leer las facturas del periodo: ${errorFacturas.message}`);
+  return {
+    periodo: aPeriodo(periodo as unknown as FilaPeriodo),
+    facturas: (facturas as unknown as FilaListado[]).map(aFacturaListado),
+  };
 }
 
 // Clave → nombre de la categoría que el contador asignó en este despacho.

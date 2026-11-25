@@ -77,6 +77,12 @@ export default async function ClienteDetallePage({
         <span className="font-mono text-sm text-text-muted">
           {cliente.rfc}
         </span>
+        <Link
+          href={`/clientes/${cliente.id}/periodos`}
+          className="mt-2 inline-flex h-10 w-fit items-center rounded-lg border border-[#8A96A3] bg-surface px-4 text-sm font-semibold text-text no-underline"
+        >
+          Ver periodos
+        </Link>
       </header>
 
       <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6">
