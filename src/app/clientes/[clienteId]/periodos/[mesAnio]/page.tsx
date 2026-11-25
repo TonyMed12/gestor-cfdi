@@ -4,8 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { TablaFacturas } from "@/components/TablaFacturas";
 import { NOMBRE_APP } from "@/lib/config";
-import { getCliente, getPeriodoCliente } from "@/lib/datos";
+import { getCliente, getPerfil, getPeriodoCliente } from "@/lib/datos";
 import { esMesAnio, nombreMes } from "@/lib/formato";
+import { ReconsultarPeriodo } from "../../AjustesCliente";
 
 type Parametros = { params: Promise<{ clienteId: string; mesAnio: string }> };
 
@@ -21,9 +22,11 @@ export default async function PeriodoClientePage({ params }: Parametros) {
   if (!esMesAnio(mesAnio)) notFound();
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
-  const datos = await getPeriodoCliente(cliente.id, mesAnio);
+  const [datos, perfil] = await Promise.all([getPeriodoCliente(cliente.id, mesAnio), getPerfil()]);
   if (!datos) notFound();
   const { periodo, facturas } = datos;
+  // Solo administrador y contador actualizan facturas (RLS); el auxiliar no ve la consulta al SAT.
+  const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
 
   const tarjetas = [
     { etiqueta: "Facturas", valor: periodo.facturas },
@@ -53,6 +56,17 @@ export default async function PeriodoClientePage({ params }: Parametros) {
           Ver resumen del periodo
         </Link>
       </header>
+
+      {puedeEditar && periodo.estado === "abierto" && (
+        <section className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5">
+          <h2 className="m-0 text-lg font-semibold">Consulta al SAT</h2>
+          <p className="m-0 text-sm text-text-muted">
+            Antes de cerrar el periodo, vuelve a consultar al SAT sus facturas para detectar cancelaciones. Las
+            canceladas salen del resumen con su motivo.
+          </p>
+          <ReconsultarPeriodo clienteId={cliente.id} mesAnio={periodo.mesAnio} />
+        </section>
+      )}
 
       <section aria-label="Facturas del periodo por estado" className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4">
         {tarjetas.map((t) => (

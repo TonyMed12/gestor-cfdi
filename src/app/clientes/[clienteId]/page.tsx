@@ -13,11 +13,12 @@ import {
   getCliente,
   getEnlaceEnvio,
   getPerfil,
+  getPeriodosCliente,
   getResumenCategoriasCliente,
   LIMITE_RESULTADOS_UUID,
 } from "@/lib/datos";
 import { dinero } from "@/lib/formato";
-import { CategoriasDelCliente, EditarCliente, ReconsultarMes } from "./AjustesCliente";
+import { CategoriasDelCliente, EditarCliente, ReconsultarPeriodo } from "./AjustesCliente";
 import { EnlaceEnvio } from "./EnlaceEnvio";
 import { ReintentarLectura } from "./ReintentarLectura";
 import { SubirArchivos } from "./SubirArchivos";
@@ -66,6 +67,10 @@ export default async function ClienteDetallePage({
   // El token solo se entrega a quien puede regenerarlo; auxiliares no lo ven.
   const enlace = puedeEditar ? await getEnlaceEnvio(cliente.id) : null;
   const categoriasCliente = puedeEditar ? await getCategoriasDeCliente(cliente.id) : [];
+  // C8: la consulta al SAT es por periodo abierto; aquí se ofrece el más reciente.
+  const periodoAbierto = puedeEditar
+    ? (await getPeriodosCliente(cliente.id)).find((p) => p.estado === "abierto")
+    : undefined;
 
   return (
     <AppShell active="/clientes">
@@ -137,7 +142,17 @@ export default async function ClienteDetallePage({
             </div>
             <div className="border-t border-[#EEF1F4] pt-5">
               <h3 className="m-0 mb-3 text-base font-semibold">Consulta al SAT</h3>
-              <ReconsultarMes clienteId={cliente.id} />
+              {periodoAbierto ? (
+                <div className="flex flex-col gap-2">
+                  <p className="m-0 text-sm text-text-muted">
+                    Vuelve a consultar el periodo abierto más reciente. Para otro periodo, usa el botón en su{" "}
+                    <Link href={`/clientes/${cliente.id}/periodos`}>lista de periodos</Link>.
+                  </p>
+                  <ReconsultarPeriodo clienteId={cliente.id} mesAnio={periodoAbierto.mesAnio} />
+                </div>
+              ) : (
+                <p className="m-0 text-sm text-text-muted">El cliente no tiene periodos abiertos.</p>
+              )}
             </div>
           </div>
         </details>

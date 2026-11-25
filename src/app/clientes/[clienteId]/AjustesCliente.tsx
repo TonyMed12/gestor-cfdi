@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { actualizarCliente, guardarCategoriaCliente, reconsultarMesActual } from "./acciones";
+import { nombreMes } from "@/lib/formato";
+import { actualizarCliente, guardarCategoriaCliente, reconsultarPeriodo } from "./acciones";
 
 const campo = "h-11 rounded-lg border border-[#8A96A3] bg-surface px-3 text-[15px]";
 
@@ -118,7 +119,9 @@ export function CategoriasDelCliente({ clienteId, categorias }: {
   );
 }
 
-export function ReconsultarMes({ clienteId }: { clienteId: string }) {
+// Vuelve a consultar al SAT las facturas de un periodo abierto (C8) para detectar cancelaciones antes de cerrarlo.
+// Se usa en la ficha del cliente, en el detalle del periodo y en el resumen.
+export function ReconsultarPeriodo({ clienteId, mesAnio }: { clienteId: string; mesAnio: string }) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -126,7 +129,7 @@ export function ReconsultarMes({ clienteId }: { clienteId: string }) {
   async function reconsultar() {
     setEnviando(true);
     setResultado(null);
-    const r = await reconsultarMesActual(clienteId);
+    const r = await reconsultarPeriodo(clienteId, mesAnio);
     setEnviando(false);
     setResultado(r);
     router.refresh();
@@ -141,7 +144,7 @@ export function ReconsultarMes({ clienteId }: { clienteId: string }) {
           disabled={enviando}
           className="h-10 rounded-lg border border-[#8A96A3] bg-surface px-4 text-sm font-semibold hover:bg-bg disabled:opacity-60"
         >
-          {enviando ? "Consultando al SAT…" : "Consultar de nuevo las facturas del mes"}
+          {enviando ? "Consultando al SAT…" : `Consultar al SAT las facturas de ${nombreMes(mesAnio)}`}
         </button>
       </div>
       {resultado && <Aviso texto={resultado.texto} tipo={resultado.ok ? "ok" : "error"} />}

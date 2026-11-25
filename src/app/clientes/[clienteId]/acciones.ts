@@ -189,10 +189,25 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
 
 // Vuelve a preguntar al SAT por una factura ya leída (por ejemplo, si no respondió o si pudo cancelarse después).
 export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; texto: string }> {
+  const { ok, texto } = await consultarDeNuevo(archivoId);
+  return { ok, texto };
+}
+
+type Reconsulta = {
+  ok: boolean;
+  texto: string;
+  estado?: "vigente" | "cancelada" | "no_encontrada";
+  sinRespuesta?: boolean; // el SAT no respondió (distinto de no tener permiso)
+  nuevaCancelada?: boolean; // antes no estaba cancelada y ahora sí
+};
+
+// Consulta al SAT una factura y guarda su estado. Si el SAT la reporta cancelada, sale del resumen
+// (estado excluido, motivo "Cancelada ante el SAT", RN-01). La usan reconsultarSat y reconsultarPeriodo.
+async function consultarDeNuevo(archivoId: string): Promise<Reconsulta> {
   const supabase = await supabaseServidor();
   const { data: factura } = await supabase
     .from("factura")
-    .select("id, cliente_id, uuid_fiscal, rfc_emisor, rfc_receptor, total, motivo_exclusion, archivo(ruta_original, tipo)")
+    .select("id, cliente_id, uuid_fiscal, rfc_emisor, rfc_receptor, total, estado_sat, motivo_exclusion, archivo(ruta_original, tipo)")
     .eq("archivo_id", archivoId)
     .maybeSingle();
   if (!factura) return { ok: false, texto: "Este archivo no tiene una factura leída" };
@@ -212,7 +227,7 @@ export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; 
     uuid: factura.uuid_fiscal, rfcEmisor: factura.rfc_emisor, rfcReceptor: factura.rfc_receptor,
     total: String(factura.total), sello,
   });
-  if (!sat) return { ok: false, texto: "El SAT no respondió. Inténtalo de nuevo en un momento." };
+  if (!sat) return { ok: false, sinRespuesta: true, texto: "El SAT no respondió. Inténtalo de nuevo en un momento." };
 
   const cambios: Record<string, string> = { estado_sat: sat, fecha_consulta_sat: new Date().toISOString() };
   if (sat === "cancelada") {
@@ -229,7 +244,12 @@ export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; 
   }
 
   revalidatePath(`/clientes/${factura.cliente_id}`);
-  return { ok: true, texto: `Estado ante el SAT: ${ESTADO_SAT[sat].texto}` };
+  return {
+    ok: true,
+    texto: `Estado ante el SAT: ${ESTADO_SAT[sat].texto}`,
+    estado: sat,
+    nuevaCancelada: sat === "cancelada" && factura.estado_sat !== "cancelada",
+  };
 }
 
 // Vuelve a leer un XML que quedó con error, sin leer o atorado en "leyendo" más de 5 minutos.
@@ -629,31 +649,56 @@ export async function guardarCategoriaCliente(clienteId: string, datos: FormData
 
 // Consulta de nuevo al SAT las facturas del mes en curso del cliente (RF-22). Cuando exista el periodo (S3-09),
 // se usará el periodo abierto en lugar del mes.
-export async function reconsultarMesActual(clienteId: string): Promise<{ ok: boolean; texto: string }> {
+// Vuelve a consultar al SAT todas las facturas de un periodo abierto del cliente (C8, RF-22), antes de cerrarlo,
+// para detectar cancelaciones posteriores. Las que el SAT reporta canceladas salen del resumen con su motivo.
+// Un periodo cerrado no se consulta: sus facturas ya no cambian (RN-07). Las facturas excluidas ya están fuera.
+export async function reconsultarPeriodo(
+  clienteId: string,
+  mesAnio: string,
+): Promise<{ ok: boolean; texto: string; nuevasCanceladas?: number }> {
   const r = await rolDecisor();
   if ("error" in r) return { ok: false, texto: r.error ?? "No tienes permiso para esto." };
-  const inicio = new Date();
-  inicio.setDate(1);
-  inicio.setHours(0, 0, 0, 0);
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mesAnio)) return { ok: false, texto: "Periodo no válido." };
+
+  const { data: periodo } = await r.supabase
+    .from("periodo").select("id, estado")
+    .eq("cliente_id", clienteId).eq("mes_anio", mesAnio).maybeSingle();
+  if (!periodo) return { ok: false, texto: "No se encontró ese periodo del cliente." };
+  if (periodo.estado !== "abierto") return { ok: false, texto: "El periodo está cerrado: sus facturas ya no se consultan." };
+
   const { data: facturas, error } = await r.supabase
     .from("factura").select("archivo_id")
-    .eq("cliente_id", clienteId).neq("estado_revision", "excluido")
-    .gte("emitido_en", inicio.toISOString()).limit(200);
-  if (error) return { ok: false, texto: "No se pudieron leer las facturas del mes." };
+    .eq("periodo_id", periodo.id).neq("estado_revision", "excluido")
+    .limit(500);
+  if (error) return { ok: false, texto: "No se pudieron leer las facturas del periodo." };
+  const lista = facturas ?? [];
 
-  let sinRespuesta = 0;
-  for (const f of facturas ?? []) {
-    const resultado = await reconsultarSat(f.archivo_id);
-    if (!resultado.ok) sinRespuesta++;
+  // Hasta 4 consultas a la vez: más rápido que una por una sin saturar al SAT.
+  const resultados: Reconsulta[] = [];
+  for (let i = 0; i < lista.length; i += 4) {
+    resultados.push(...(await Promise.all(lista.slice(i, i + 4).map((f) => consultarDeNuevo(f.archivo_id)))));
   }
-  const { count } = await r.supabase
-    .from("factura").select("id", { count: "exact", head: true })
-    .eq("cliente_id", clienteId).eq("estado_sat", "cancelada").gte("emitido_en", inicio.toISOString());
+  const cuenta = (filtro: (x: Reconsulta) => boolean) => resultados.filter(filtro).length;
+  const nuevasCanceladas = cuenta((x) => Boolean(x.nuevaCancelada));
+  const vigentes = cuenta((x) => x.estado === "vigente");
+  const noEncontradas = cuenta((x) => x.estado === "no_encontrada");
+  const sinRespuesta = cuenta((x) => Boolean(x.sinRespuesta));
+  const otrosErrores = cuenta((x) => !x.ok && !x.sinRespuesta);
+
   revalidatePath(`/clientes/${clienteId}`);
-  return {
-    ok: true,
-    texto: `Se consultaron ${facturas?.length ?? 0} facturas del mes. Canceladas: ${count ?? 0}. Sin respuesta del SAT: ${sinRespuesta}.`,
-  };
+  revalidatePath(`/clientes/${clienteId}/periodos`);
+  revalidatePath(`/clientes/${clienteId}/periodos/${mesAnio}`);
+  revalidatePath("/resumen");
+
+  const partes = [
+    `Se consultaron ${lista.length} ${lista.length === 1 ? "factura" : "facturas"} del periodo.`,
+    `Vigentes: ${vigentes}.`,
+    `Canceladas nuevas: ${nuevasCanceladas}${nuevasCanceladas > 0 ? " (ya salieron del resumen con su motivo)" : ""}.`,
+    noEncontradas > 0 ? `No encontradas: ${noEncontradas}.` : "",
+    sinRespuesta > 0 ? `Sin respuesta del SAT: ${sinRespuesta}; vuelve a intentarlo.` : "",
+    otrosErrores > 0 ? `No se pudieron consultar: ${otrosErrores}.` : "",
+  ];
+  return { ok: sinRespuesta === 0 && otrosErrores === 0, texto: partes.filter(Boolean).join(" "), nuevasCanceladas };
 }
 
 // PDF o foto subidos desde la ficha del cliente: se leen igual que en la bandeja de entrada.

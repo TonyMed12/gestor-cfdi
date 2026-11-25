@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/Badge";
 import { NOMBRE_APP } from "@/lib/config";
-import { getCliente, getClientes, getPeriodosPorCliente, getResumenPeriodo } from "@/lib/datos";
+import { ReconsultarPeriodo } from "@/app/clientes/[clienteId]/AjustesCliente";
+import { getCliente, getClientes, getPerfil, getPeriodosPorCliente, getResumenPeriodo } from "@/lib/datos";
 import { dinero, esMesAnio, nombreMes } from "@/lib/formato";
 import { agruparExclusiones, cuadraConPeriodo } from "@/lib/resumen";
 import { SelectorResumen } from "./SelectorResumen";
@@ -20,7 +21,8 @@ export default async function ResumenPage({
   searchParams: Promise<{ cliente?: string; periodo?: string }>;
 }) {
   const { cliente: clienteId, periodo: mesAnio } = await searchParams;
-  const [clientes, periodosPorCliente] = await Promise.all([getClientes(), getPeriodosPorCliente()]);
+  const [clientes, periodosPorCliente, perfil] = await Promise.all([getClientes(), getPeriodosPorCliente(), getPerfil()]);
+  const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const cliente = clienteId && /^[0-9a-f-]{36}$/i.test(clienteId) ? await getCliente(clienteId) : undefined;
 
   // Con cliente y sin periodo, se abre su periodo más reciente y queda en la URL.
@@ -242,6 +244,17 @@ export default async function ResumenPage({
           </>
         )}
       </section>
+
+      {puedeEditar && periodo.estado === "abierto" && (
+        <section className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5">
+          <h2 className="m-0 text-lg font-semibold">Antes de cerrar: consulta al SAT</h2>
+          <p className="m-0 text-sm text-text-muted">
+            Vuelve a consultar al SAT las facturas de este periodo. Si alguna se canceló después de subirla, sale del
+            resumen y aparece en «Fuera del resumen» con su motivo.
+          </p>
+          <ReconsultarPeriodo clienteId={cliente.id} mesAnio={periodo.mesAnio} />
+        </section>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <button
