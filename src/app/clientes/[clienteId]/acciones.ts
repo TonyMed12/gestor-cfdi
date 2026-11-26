@@ -235,7 +235,15 @@ async function consultarDeNuevo(archivoId: string): Promise<Reconsulta> {
     cambios.motivo_exclusion = factura.motivo_exclusion ?? "Cancelada ante el SAT";
   }
   // RLS: solo el contador y el administrador pueden actualizar facturas.
-  const { data: actualizada } = await supabase.from("factura").update(cambios).eq("id", factura.id).select("id");
+  const { data: actualizada, error: errorActualizar } = await supabase
+    .from("factura").update(cambios).eq("id", factura.id).select("id");
+  // D4: una factura aprobada de un periodo cerrado no cambia de estado sin motivo (supabase/22-cierre-de-periodo.sql).
+  if (errorActualizar?.code === "PC001") {
+    return {
+      ok: false,
+      texto: `El SAT la reporta ${ESTADO_SAT[sat].texto.toLowerCase()}, pero su periodo está cerrado: no se cambió.`,
+    };
+  }
   if (!actualizada?.length) return { ok: false, texto: "No tienes permiso para actualizar la factura" };
   if (sat === "cancelada") {
     // El paso por_revisar → error no se permite desde la sesión del usuario (script de endurecimiento):

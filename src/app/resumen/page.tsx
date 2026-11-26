@@ -7,6 +7,8 @@ import { ReconsultarPeriodo } from "@/app/clientes/[clienteId]/AjustesCliente";
 import { getCliente, getClientes, getPerfil, getPeriodosPorCliente, getResumenPeriodo } from "@/lib/datos";
 import { dinero, esMesAnio, nombreMes } from "@/lib/formato";
 import { agruparExclusiones, cuadraConPeriodo } from "@/lib/resumen";
+import { describirCierre, puedeCerrar } from "@/lib/cierre";
+import { CerrarPeriodo } from "./CerrarPeriodo";
 import { SelectorResumen } from "./SelectorResumen";
 
 export const metadata = { title: `Resumen del periodo · ${NOMBRE_APP}` };
@@ -120,6 +122,12 @@ export default async function ResumenPage({
         <p className="m-0 text-[15px] text-text-muted">
           {cliente.razonSocial} · <span className="font-mono text-sm">{cliente.rfc}</span>
         </p>
+        {periodo.estado === "cerrado" && (
+          <p className="m-0 text-sm font-semibold">
+            {describirCierre(periodo.cerradoEn, periodo.cerradoPor)} Cambiar una de sus facturas pide un motivo, que
+            queda en la bitácora.
+          </p>
+        )}
         <p className="m-0 text-sm text-text-muted">
           {resumen.incluidas === 1 ? "1 factura incluida" : `${resumen.incluidas} facturas incluidas`} ·{" "}
           {excluidas.length === 1 ? "1 fuera del resumen" : `${excluidas.length} fuera del resumen`}. Solo cuentan las
@@ -387,6 +395,27 @@ export default async function ResumenPage({
         </section>
       )}
 
+      {/* D4: cerrar el periodo (solo administrador y contador, y sin facturas por revisar). */}
+      {puedeEditar && periodo.estado === "abierto" && (
+        <section className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5">
+          <h2 className="m-0 text-lg font-semibold">Cerrar el periodo</h2>
+          <p className="m-0 text-sm text-text-muted">
+            Al cerrar, el resumen de este mes queda fijo. Si después hay que aprobar, corregir o rechazar una de sus
+            facturas, se pide el motivo y queda en la bitácora.
+          </p>
+          <CerrarPeriodo
+            clienteId={cliente.id}
+            mesAnio={periodo.mesAnio}
+            nombreMes={nombreMes(periodo.mesAnio)}
+            pendientes={periodo.conteo.porRevisar + periodo.conteo.porConfirmar}
+            motivoNoCerrar={(() => {
+              const r = puedeCerrar(periodo.conteo);
+              return r.ok ? undefined : r.motivo;
+            })()}
+          />
+        </section>
+      )}
+
       <div className="flex flex-wrap gap-3">
         {/* D2: libro de Excel con hojas Resumen y Detalle, con formato. */}
         <a
@@ -411,14 +440,6 @@ export default async function ResumenPage({
           className="h-11 rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold disabled:opacity-60"
         >
           Exportar a PDF
-        </button>
-        <button
-          type="button"
-          disabled
-          title="Pendiente: tarea D4"
-          className="h-11 rounded-lg bg-accent px-4 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          Cerrar periodo
         </button>
       </div>
     </AppShell>

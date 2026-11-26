@@ -6,6 +6,7 @@ import { Paginacion } from "@/components/Paginacion";
 import { TablaFacturas } from "@/components/TablaFacturas";
 import { NOMBRE_APP } from "@/lib/config";
 import { getCliente, getPerfil, getPeriodoCliente } from "@/lib/datos";
+import { describirCierre } from "@/lib/cierre";
 import { esMesAnio, nombreMes } from "@/lib/formato";
 import { leerPagina } from "@/lib/paginacion";
 import { ReconsultarPeriodo } from "../../AjustesCliente";
@@ -56,6 +57,9 @@ export default async function PeriodoClientePage({
         <p className="m-0 text-[15px] text-text-muted">
           {cliente.razonSocial} · <span className="font-mono text-sm">{cliente.rfc}</span>
         </p>
+        {periodo.estado === "cerrado" && (
+          <p className="m-0 text-sm font-semibold">{describirCierre(periodo.cerradoEn, periodo.cerradoPor)}</p>
+        )}
         <Link
           href={`/resumen?cliente=${cliente.id}&periodo=${periodo.mesAnio}`}
           className="mt-2 inline-flex h-10 w-fit items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"

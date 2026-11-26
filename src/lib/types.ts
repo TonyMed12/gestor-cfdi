@@ -84,6 +84,7 @@ export interface Factura {
   estadoSat: EstadoSat;
   estadoRevision: EstadoRevision;
   motivoExclusion?: string;
+  periodoCerrado?: string | null; // D4: AAAA-MM si su periodo está cerrado; entonces decidir pide motivo
   deducible?: boolean | null; // A7: null = según la categoría; true o false = marca del contador (solo recibidas)
   prioridad: "alta" | "normal";
   motivoPrioridad?: string;

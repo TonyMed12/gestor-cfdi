@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { deduccionesDeFactura } from "@/lib/deducibilidad";
-import { mesDeFecha } from "@/lib/formato";
+import { MOTIVO_MAXIMO, MOTIVO_MINIMO } from "@/lib/cierre";
+import { mesDeFecha, nombreMes } from "@/lib/formato";
 import type { Factura, OrigenClasificacion } from "@/lib/types";
 import { aprobarFactura, guardarDeducible, rechazarFactura } from "./acciones";
 
@@ -38,6 +39,8 @@ export function RevisionClient({ factura, categorias, historial }: {
   // conceptoId → categoriaId, solo para los conceptos que el contador cambia.
   const [corregidas, setCorregidas] = useState<Record<string, string>>({});
   const [motivo, setMotivo] = useState("");
+  // D4: en un periodo cerrado, aprobar, corregir o rechazar pide el motivo del cambio (queda en la bitácora).
+  const [motivoCierre, setMotivoCierre] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -45,6 +48,8 @@ export function RevisionClient({ factura, categorias, historial }: {
   const rechazada = factura.estadoRevision === "excluido";
   const idPorNombre = new Map(categorias.map((c) => [c.nombre, c.id]));
   const sinClasificar = factura.conceptos.some((c) => !c.categoria);
+  const periodoCerrado = factura.periodoCerrado ?? null;
+  const faltaMotivoCierre = Boolean(periodoCerrado) && motivoCierre.trim().length < MOTIVO_MINIMO;
 
   const valorCategoria = (conceptoId: string | undefined, categoria: string | undefined) =>
     (conceptoId && corregidas[conceptoId]) || (categoria ? idPorNombre.get(categoria) ?? "" : "");
@@ -52,7 +57,7 @@ export function RevisionClient({ factura, categorias, historial }: {
   async function aprobar() {
     setError("");
     setEnviando(true);
-    const resultado = await aprobarFactura(factura.id, corregidas);
+    const resultado = await aprobarFactura(factura.id, corregidas, periodoCerrado ? motivoCierre : undefined);
     setEnviando(false);
     if (resultado.error) return setError(resultado.error);
     setModo("vista");
@@ -76,7 +81,7 @@ export function RevisionClient({ factura, categorias, historial }: {
   async function rechazar() {
     setError("");
     setEnviando(true);
-    const resultado = await rechazarFactura(factura.id, motivo);
+    const resultado = await rechazarFactura(factura.id, motivo, periodoCerrado ? motivoCierre : undefined);
     setEnviando(false);
     if (resultado.error) return setError(resultado.error);
     setModo("vista");
@@ -434,12 +439,39 @@ export function RevisionClient({ factura, categorias, historial }: {
             </div>
           )}
 
+          {!aprobada && !rechazada && periodoCerrado && (
+            <div role="note" className="flex flex-col gap-2 rounded-lg border border-[#E7C873] bg-[#FFF8E6] p-4">
+              <span className="text-[15px] font-semibold">
+                Periodo cerrado: <span className="capitalize">{nombreMes(periodoCerrado)}</span>
+              </span>
+              <span className="text-sm">
+                Esta factura es de un mes que ya se cerró. Para aprobarla, corregirla o rechazarla escribe el motivo;
+                queda en la bitácora con tu nombre.
+              </span>
+              <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                Motivo del cambio
+                <textarea
+                  value={motivoCierre}
+                  onChange={(e) => setMotivoCierre(e.target.value)}
+                  maxLength={MOTIVO_MAXIMO}
+                  rows={2}
+                  placeholder="Por ejemplo: la factura del proveedor llegó después del cierre"
+                  aria-describedby="ayuda-motivo-cierre"
+                  className="rounded-lg border border-[#8A96A3] bg-surface px-3 py-2 text-[15px] font-normal"
+                />
+              </label>
+              <span id="ayuda-motivo-cierre" className="text-[13px] text-text-muted">
+                Al menos {MOTIVO_MINIMO} letras.
+              </span>
+            </div>
+          )}
+
           {!aprobada && !rechazada && modo === "vista" && (
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={aprobar}
-                disabled={sinClasificar || enviando}
+                disabled={sinClasificar || enviando || faltaMotivoCierre}
                 className="h-12 rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
               >
                 Aprobar clasificación
@@ -480,7 +512,7 @@ export function RevisionClient({ factura, categorias, historial }: {
               <button
                 type="button"
                 onClick={aprobar}
-                disabled={enviando}
+                disabled={enviando || faltaMotivoCierre}
                 className="h-12 rounded-lg bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
               >
                 {enviando ? "Guardando…" : Object.keys(corregidas).length > 0 ? "Guardar corrección y aprobar" : "Aprobar"}
@@ -510,7 +542,7 @@ export function RevisionClient({ factura, categorias, historial }: {
               <button
                 type="button"
                 onClick={rechazar}
-                disabled={enviando}
+                disabled={enviando || faltaMotivoCierre}
                 className="h-12 rounded-lg bg-[#B42318] text-base font-semibold text-white disabled:opacity-60"
               >
                 {enviando ? "Guardando…" : "Confirmar rechazo"}

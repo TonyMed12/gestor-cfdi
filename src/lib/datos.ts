@@ -229,7 +229,7 @@ export async function getCliente(id: string): Promise<Cliente | undefined> {
 
 // Facturas leídas de la base, con sus conceptos e impuestos (RLS limita a tu despacho).
 const SELECCION_FACTURA =
-  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, regimen_receptor, fuente, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, deducible, emitido_en, timbrado_en, concepto(id, clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, categoria_id, categoria(nombre), impuesto(tipo, impuesto, tasa, importe))";
+  "id, cliente_id, uuid_fiscal, tipo_comprobante, relacion, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, uso_cfdi, forma_pago, metodo_pago, regimen_receptor, fuente, subtotal, total, moneda, estado_sat, fecha_consulta_sat, estado_revision, motivo_exclusion, deducible, emitido_en, timbrado_en, periodo(estado, mes_anio), concepto(id, clave_prod_serv, descripcion, cantidad, importe, objeto_impuesto, categoria_id, categoria(nombre), impuesto(tipo, impuesto, tasa, importe))";
 
 type FilaFacturaCompleta = {
   id: string;
@@ -256,6 +256,7 @@ type FilaFacturaCompleta = {
   deducible: boolean | null;
   emitido_en: string;
   timbrado_en: string;
+  periodo: { estado: string; mes_anio: string } | null;
   concepto: {
     id: string;
     clave_prod_serv: string;
@@ -295,6 +296,7 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
   estadoRevision: f.estado_revision as Factura["estadoRevision"],
   motivoExclusion: f.motivo_exclusion ?? undefined,
   deducible: f.deducible,
+  periodoCerrado: f.periodo?.estado === "cerrado" ? f.periodo.mes_anio : null,
   prioridad: "normal",
   categoriaPropuesta: "Sin clasificar",
   conceptos: f.concepto.map(
@@ -540,6 +542,7 @@ export type PeriodoCliente = {
   mesAnio: string;
   estado: "abierto" | "cerrado";
   cerradoEn: string | null;
+  cerradoPor: string | null; // nombre de quien lo cerró (D4)
   facturas: number;
   conteo: ConteoRevision;
 };
@@ -556,6 +559,7 @@ type FilaPeriodo = {
   mes_anio: string;
   estado: "abierto" | "cerrado";
   cerrado_en: string | null;
+  usuario: { nombre: string } | null; // quien lo cerró (periodo.cerrado_por)
   factura: { estado_revision: string }[];
 };
 
@@ -564,6 +568,7 @@ const aPeriodo = (p: FilaPeriodo): PeriodoCliente => ({
   mesAnio: p.mes_anio,
   estado: p.estado,
   cerradoEn: p.cerrado_en,
+  cerradoPor: p.usuario?.nombre ?? null,
   facturas: p.factura.length,
   conteo: contarPorEstado(p.factura.map((f) => f.estado_revision)),
 });
@@ -574,7 +579,7 @@ export async function getPeriodosCliente(clienteId: string): Promise<PeriodoClie
   const supabase = await supabaseServidor();
   const { data, error } = await supabase
     .from("periodo")
-    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .select("id, mes_anio, estado, cerrado_en, usuario(nombre), factura(estado_revision)")
     .eq("cliente_id", clienteId)
     .order("mes_anio", { ascending: false });
   if (error) throw new Error(`No se pudieron leer los periodos: ${error.message}`);
@@ -638,7 +643,7 @@ export async function getResumenPeriodo(
   const supabase = await supabaseServidor();
   const { data: periodo, error } = await supabase
     .from("periodo")
-    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .select("id, mes_anio, estado, cerrado_en, usuario(nombre), factura(estado_revision)")
     .eq("cliente_id", clienteId)
     .eq("mes_anio", mesAnio)
     .maybeSingle();
@@ -738,7 +743,7 @@ export async function getPeriodoCliente(
   const supabase = await supabaseServidor();
   const { data: periodo, error } = await supabase
     .from("periodo")
-    .select("id, mes_anio, estado, cerrado_en, factura(estado_revision)")
+    .select("id, mes_anio, estado, cerrado_en, usuario(nombre), factura(estado_revision)")
     .eq("cliente_id", clienteId)
     .eq("mes_anio", mesAnio)
     .maybeSingle();
