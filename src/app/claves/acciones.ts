@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { supabaseServidor } from "@/lib/supabase-servidor";
 
+// H3: las claves aplican a todo el despacho, así que su categoría debe ser del despacho, nunca la propia de un cliente.
+async function esCategoriaDelDespacho(supabase: Awaited<ReturnType<typeof supabaseServidor>>, categoriaId: string) {
+  const { data } = await supabase.from("categoria").select("id").eq("id", categoriaId).is("cliente_id", null).maybeSingle();
+  return Boolean(data);
+}
+const NO_ES_DEL_DESPACHO = "Esa categoría es propia de un cliente: a una clave solo se le asignan categorías del despacho.";
+
 // Asigna (o quita, si categoriaId viene vacío) la categoría de una clave del SAT en el despacho.
 // RLS (script 11) solo deja cambiar a administrador y contador; aquí se revisa antes.
 export async function guardarClaveCategoria(
@@ -32,6 +39,7 @@ export async function guardarClaveCategoria(
       .eq("clave", clave);
     if (error) return { error: "No se pudo quitar la categoría." };
   } else {
+    if (!(await esCategoriaDelDespacho(supabase, categoriaId))) return { error: NO_ES_DEL_DESPACHO };
     const { error } = await supabase
       .from("clave_categoria")
       .upsert(
@@ -76,6 +84,7 @@ export async function guardarClavesCategoria(
   }
 
   // RLS (script 11) también revisa que la categoría sea del despacho.
+  if (!(await esCategoriaDelDespacho(supabase, categoriaId))) return { error: NO_ES_DEL_DESPACHO };
   const { error } = await supabase
     .from("clave_categoria")
     .upsert(

@@ -649,13 +649,26 @@ export async function guardarCategoriaCliente(clienteId: string, datos: FormData
   const { data: cliente } = await r.supabase
     .from("clientes").select("id").eq("id", clienteId).eq("despacho_id", r.despachoId).maybeSingle();
   if (!cliente) return { error: "Cliente no encontrado." };
-  const { data: repetida } = await r.supabase
-    .from("categoria").select("id").eq("cliente_id", clienteId).eq("nombre", nombre).maybeSingle();
-  if (repetida) return { error: "Este cliente ya tiene una categoría con ese nombre." };
+  // H3: el cliente ve sus categorías y las del despacho; ninguna de esas puede llamarse igual (sin importar mayúsculas).
+  const { data: repetidas } = await r.supabase
+    .from("categoria").select("cliente_id")
+    .eq("despacho_id", r.despachoId)
+    .or(`cliente_id.is.null,cliente_id.eq.${clienteId}`)
+    .ilike("nombre", nombre.replace(/[\\%_]/g, (c) => `\\${c}`))
+    .limit(1);
+  if (repetidas && repetidas.length > 0) {
+    return {
+      error: repetidas[0].cliente_id
+        ? "Este cliente ya tiene una categoría con ese nombre."
+        : "Ya hay una categoría del despacho con ese nombre: úsala o elige otro nombre.",
+    };
+  }
   const { error } = await r.supabase.from("categoria").insert({
     despacho_id: r.despachoId, cliente_id: clienteId, nombre, deducible_default: datos.get("deducible") === "on",
   });
-  if (error) return { error: "No se pudo guardar la categoría." };
+  if (error) {
+    return { error: error.code === "CT001" ? "Ya hay una categoría con ese nombre para este cliente." : "No se pudo guardar la categoría." };
+  }
   revalidatePath(`/clientes/${clienteId}`);
   return {};
 }

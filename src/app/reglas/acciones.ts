@@ -32,6 +32,10 @@ export async function guardarReglaEmisor(
 
   const yo = await personaDecisora();
   if ("error" in yo) return { error: yo.error };
+  // H3: la regla aplica a todos los clientes: su categoría debe ser del despacho, no la propia de un cliente.
+  const { data: delDespacho } = await yo.supabase
+    .from("categoria").select("id").eq("id", categoriaId).is("cliente_id", null).maybeSingle();
+  if (!delDespacho) return { error: "Elige una categoría del despacho (no una propia de un cliente)." };
 
   const { error } = await yo.supabase
     .from("regla_emisor")
