@@ -7,6 +7,15 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { supabaseServidor } from "@/lib/supabase-servidor";
 import { leerMotivoCierre, mensajeErrorCierre } from "@/lib/cierre";
 
+// Rol de quien está en sesión, o null si no hay sesión.
+async function rolEnSesion(): Promise<string | null> {
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: yo } = await supabase.from("usuario").select("rol").eq("id", user.id).maybeSingle();
+  return (yo?.rol as string | undefined) ?? null;
+}
+
 // Solo administrador y contador deciden. RLS limita la factura a su despacho.
 // También dice si la factura es de un periodo cerrado (D4): entonces cualquier decisión pide un motivo.
 async function permisoDecidir(facturaId: string) {
@@ -144,6 +153,11 @@ export async function aprobarFacturasEnLote(facturaIds: string[]): Promise<Resul
   }
   const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!unicas.every((id) => esUuid.test(id))) return { error: "Hay una factura no válida.", aprobadas: [], noAprobadas: [] };
+  // G7: el rol se revisa una vez, antes de recorrer las facturas, con un mensaje claro.
+  const rol = await rolEnSesion();
+  if (rol !== "administrador" && rol !== "contador") {
+    return { error: "Solo el administrador o el contador pueden aprobar facturas.", aprobadas: [], noAprobadas: [] };
+  }
 
   const resultado: ResultadoLote = { aprobadas: [], noAprobadas: [] };
   for (const id of unicas) {

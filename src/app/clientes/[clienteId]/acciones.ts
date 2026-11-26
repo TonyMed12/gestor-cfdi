@@ -189,6 +189,9 @@ async function leerXml(supabase: SupabaseClient, archivoId: string): Promise<Lec
 
 // Vuelve a preguntar al SAT por una factura ya leída (por ejemplo, si no respondió o si pudo cancelarse después).
 export async function reconsultarSat(archivoId: string): Promise<{ ok: boolean; texto: string }> {
+  // G7: guardar el estado ante el SAT cambia la factura: solo administrador y contador (RLS también lo impide).
+  const r = await rolDecisor();
+  if ("error" in r) return { ok: false, texto: r.error ?? "No tienes permiso para esto." };
   const { ok, texto } = await consultarDeNuevo(archivoId);
   return { ok, texto };
 }

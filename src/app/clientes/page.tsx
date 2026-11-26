@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { NOMBRE_APP } from "@/lib/config";
-import { getClientes } from "@/lib/datos";
+import { getClientes, getPerfil } from "@/lib/datos";
 import { NuevoClienteForm } from "./NuevoClienteForm";
 
 export const metadata = { title: `Clientes · ${NOMBRE_APP}` };
 
 export default async function ClientesPage() {
-  const clientes = await getClientes();
+  const [clientes, perfil] = await Promise.all([getClientes(), getPerfil()]);
+  // G7: solo el administrador y el contador dan de alta clientes (RLS, script 04).
+  const puedeCrear = perfil?.rol === "administrador" || perfil?.rol === "contador";
 
   return (
     <AppShell active="/clientes">
@@ -17,7 +19,7 @@ export default async function ClientesPage() {
           Cada cliente tiene su propio repositorio aislado.
         </p>
       </header>
-      <NuevoClienteForm />
+      {puedeCrear && <NuevoClienteForm />}
       <section className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         {clientes.map((c) => (
           <Link

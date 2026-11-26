@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { NOMBRE_APP } from "@/lib/config";
-import { getCategorias, getFacturaPorId, getHistorialClasificacion } from "@/lib/datos";
+import { getCategorias, getFacturaPorId, getHistorialClasificacion, getPerfil } from "@/lib/datos";
 import { RevisionClient } from "./RevisionClient";
 
 // Un id que no es UUID daría error de Postgres; se trata como factura inexistente.
@@ -29,9 +29,10 @@ export default async function RevisionPage({
   const { facturaId } = await params;
   const factura = esUuid(facturaId) ? await getFacturaPorId(facturaId) : undefined;
   if (!factura) notFound();
-  const [categorias, historial] = await Promise.all([
+  const [categorias, historial, perfil] = await Promise.all([
     getCategorias(factura.clienteId),
     getHistorialClasificacion(factura.conceptos.flatMap((c) => (c.id ? [c.id] : []))),
+    getPerfil(),
   ]);
 
   return (
@@ -39,6 +40,7 @@ export default async function RevisionPage({
       factura={factura}
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre, deducible: c.deducibleDefault }))}
       historial={historial}
+      puedeDecidir={perfil?.rol === "administrador" || perfil?.rol === "contador"}
     />
   );
 }

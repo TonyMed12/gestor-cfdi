@@ -29,10 +29,13 @@ type CambioCategoria = {
   concepto: string;
 };
 
-export function RevisionClient({ factura, categorias, historial }: {
+export function RevisionClient({ factura, categorias, historial, puedeDecidir }: {
   factura: Factura;
   categorias: Categoria[];
   historial: CambioCategoria[];
+  // G7: solo el administrador y el contador aprueban, corrigen, rechazan o marcan la deducibilidad.
+  // El auxiliar ve la factura en modo consulta (el servidor y la base también se lo impiden).
+  puedeDecidir: boolean;
 }) {
   const router = useRouter();
   const [modo, setModo] = useState<Modo>("vista");
@@ -98,7 +101,7 @@ export function RevisionClient({ factura, categorias, historial }: {
   const categoriaPorId = new Map(categorias.map((k) => [k.id, k]));
   const categoriaPorNombre = new Map(categorias.map((k) => [k.nombre, k]));
   const recibida = factura.relacion === "recibida";
-  const editable = !aprobada && !rechazada;
+  const editable = !aprobada && !rechazada && puedeDecidir;
   const [marca, setMarca] = useState<boolean | null>(factura.deducible ?? null);
   const [guardandoMarca, setGuardandoMarca] = useState(false);
   const deducciones = deduccionesDeFactura({
@@ -439,7 +442,14 @@ export function RevisionClient({ factura, categorias, historial }: {
             </div>
           )}
 
-          {!aprobada && !rechazada && periodoCerrado && (
+          {!aprobada && !rechazada && !puedeDecidir && (
+            <p role="note" className="m-0 rounded-lg border border-border bg-[#F6F8FA] px-3.5 py-3 text-sm">
+              <span className="font-semibold">Solo consulta.</span> Aprobar, corregir, rechazar o marcar la deducibilidad
+              lo hacen el administrador o el contador.
+            </p>
+          )}
+
+          {editable && periodoCerrado && (
             <div role="note" className="flex flex-col gap-2 rounded-lg border border-[#E7C873] bg-[#FFF8E6] p-4">
               <span className="text-[15px] font-semibold">
                 Periodo cerrado: <span className="capitalize">{nombreMes(periodoCerrado)}</span>
@@ -466,7 +476,7 @@ export function RevisionClient({ factura, categorias, historial }: {
             </div>
           )}
 
-          {!aprobada && !rechazada && modo === "vista" && (
+          {editable && modo === "vista" && (
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
@@ -500,7 +510,7 @@ export function RevisionClient({ factura, categorias, historial }: {
             </div>
           )}
 
-          {!aprobada && !rechazada && modo === "corregir" && (
+          {editable && modo === "corregir" && (
             <div className="flex flex-col gap-2.5">
               <p className="m-0 text-sm text-text-muted">
                 Cambia la categoría de cada concepto en la{" "}
@@ -527,7 +537,7 @@ export function RevisionClient({ factura, categorias, historial }: {
             </div>
           )}
 
-          {!aprobada && !rechazada && modo === "rechazar" && (
+          {editable && modo === "rechazar" && (
             <div className="flex flex-col gap-2.5">
               <label className="flex flex-col gap-1.5 text-sm font-semibold">
                 Motivo del rechazo

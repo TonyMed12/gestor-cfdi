@@ -24,7 +24,9 @@ export function NuevoClienteForm() {
       setError(
         error.code === "23505"
           ? "Ya tienes un cliente con ese RFC."
-          : "No se pudo guardar el cliente.",
+          : error.code === "42501"
+            ? "Solo el administrador o el contador pueden dar de alta clientes."
+            : "No se pudo guardar el cliente.",
       );
       return;
     }
