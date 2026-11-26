@@ -209,12 +209,14 @@ export async function getDescripcionesSat(usos: string[], regimenes: string[]) {
 
 export async function getClientes(): Promise<Cliente[]> {
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase
-    .from("resumen_cliente")
-    .select("id, razon_social, rfc, sin_leer, por_revisar, con_error")
-    .order("razon_social");
+  // H2: la vista no trae si el cliente está activo; se lee aparte (RLS: los mismos clientes) para marcar los inactivos.
+  const [{ data, error }, { data: estados }] = await Promise.all([
+    supabase.from("resumen_cliente").select("id, razon_social, rfc, sin_leer, por_revisar, con_error").order("razon_social"),
+    supabase.from("clientes").select("id, activo"),
+  ]);
   if (error) throw new Error(`No se pudieron leer los clientes: ${error.message}`);
-  return data.map(aCliente);
+  const activo = new Map((estados ?? []).map((c) => [c.id as string, c.activo as boolean]));
+  return data.map((f) => ({ ...aCliente(f), activo: activo.get(f.id) ?? true }));
 }
 
 export async function getCliente(id: string): Promise<Cliente | undefined> {

@@ -27,7 +27,13 @@ export default async function ClientesPage() {
             href={`/clientes/${c.id}`}
             className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-5 no-underline hover:border-accent focus-visible:border-accent"
           >
-            <span className="font-semibold text-text">{c.razonSocial}</span>
+            <span className="flex flex-wrap items-center gap-2 font-semibold text-text">
+              {c.razonSocial}
+              {/* H2: un cliente desactivado ya no recibe facturas nuevas. */}
+              {c.activo === false && (
+                <span className="rounded-full bg-[#EEF1F4] px-2 py-0.5 text-[12px] font-semibold text-text-muted">Inactivo</span>
+              )}
+            </span>
             <span className="font-mono text-sm text-text-muted">{c.rfc}</span>
             <span className="text-sm text-text-muted">
               {c.porRevisar} por revisar · {c.sinLeer} sin leer · {c.conError} con error

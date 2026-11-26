@@ -91,7 +91,15 @@ export default async function ClienteDetallePage({
         <span className="text-sm text-text-muted">
           <Link href="/clientes">Clientes</Link> / {cliente.razonSocial}
         </span>
-        <h1 className="m-0 text-[30px] font-bold">{cliente.razonSocial}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="m-0 text-[30px] font-bold">{cliente.razonSocial}</h1>
+          {cliente.activo === false && <Badge>Inactivo</Badge>}
+        </div>
+        {cliente.activo === false && (
+          <p role="note" className="m-0 text-sm text-text-muted">
+            Cliente desactivado: no recibe facturas nuevas por la bandeja de entrada ni por su enlace de envío.
+          </p>
+        )}
         <span className="font-mono text-sm text-text-muted">
           {cliente.rfc}
         </span>

@@ -2,8 +2,8 @@
 
 import { headers } from "next/headers";
 import {
-  abrirSesion, bloqueoDeIp, buscarAcceso, contrasenaCoincide, huellaIp, MAX_INTENTOS, MINUTOS_BLOQUEO,
-  normalizarContrasena, registrarFalloDeIp, venció,
+  abrirSesion, bloqueoDeIp, buscarAcceso, contrasenaCoincide, huellaIp, MAX_INTENTOS, MENSAJE_CLIENTE_INACTIVO,
+  MINUTOS_BLOQUEO, normalizarContrasena, registrarFalloDeIp, venció,
 } from "@/lib/enlace";
 import { ipDeLaPeticion, mensajeBloqueoIp } from "@/lib/limite-ip";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -25,6 +25,7 @@ export async function desbloquearEnlace(token: string, contrasena: string): Prom
   const acceso = await buscarAcceso(token);
   if (!acceso) return fallar("Este enlace no es válido o ya fue reemplazado.");
   if (venció(acceso)) return { error: "Este enlace venció. Pide uno nuevo a tu contador." };
+  if (!acceso.cliente_activo) return { error: MENSAJE_CLIENTE_INACTIVO };
   if (!acceso.password_hash) return { error: "Este enlace ya no tiene contraseña. Pide uno nuevo a tu contador." };
 
   const ahora = Date.now();

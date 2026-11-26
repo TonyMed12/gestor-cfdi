@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { buscarAcceso, sesionValida, venció } from "@/lib/enlace";
+import { buscarAcceso, MENSAJE_CLIENTE_INACTIVO, sesionValida, venció } from "@/lib/enlace";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { DesbloquearForm } from "./DesbloquearForm";
 import { EnviarForm } from "./EnviarForm";
@@ -22,7 +22,13 @@ export default async function EnviarPage({ params }: { params: Promise<{ token: 
     .from("clientes").select("razon_social").eq("id", acceso.cliente_id).maybeSingle();
   if (!cliente) notFound();
 
-  const cuerpo = venció(acceso) ? (
+  // H2: si el cliente está desactivado, el enlace ya no recibe facturas (ni pide la contraseña).
+  const recibe = acceso.cliente_activo && !venció(acceso);
+  const cuerpo = !acceso.cliente_activo ? (
+    <p role="alert" className="m-0 rounded-xl border border-border bg-surface p-6 text-[15px]">
+      {MENSAJE_CLIENTE_INACTIVO}
+    </p>
+  ) : venció(acceso) ? (
     <p role="alert" className="m-0 rounded-xl border border-border bg-surface p-6 text-[15px]">
       Este enlace venció. Pide uno nuevo a tu contador.
     </p>
@@ -37,7 +43,7 @@ export default async function EnviarPage({ params }: { params: Promise<{ token: 
       <header className="flex flex-col gap-2">
         <h1 className="m-0 text-[26px] font-bold">Envía tus facturas</h1>
         <p className="m-0 text-[15px] text-text-muted">
-          Para {cliente.razon_social}. {venció(acceso) ? "" : "Selecciona tus archivos XML y envíalos."}
+          Para {cliente.razon_social}. {recibe ? "Selecciona tus archivos XML y envíalos." : ""}
         </p>
       </header>
       {cuerpo}

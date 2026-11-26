@@ -41,16 +41,22 @@ export type AccesoEnlace = {
   vence_en: string;
   intentos_fallidos: number;
   bloqueado_hasta: string | null;
+  cliente_activo: boolean; // H2: un cliente desactivado no recibe facturas nuevas, tampoco por su enlace
 };
+
+export const MENSAJE_CLIENTE_INACTIVO =
+  "Este enlace ya no recibe facturas porque el cliente está desactivado. Comunícate con tu contador.";
 
 // Busca el acceso por token con la clave de servicio: la tabla no tiene políticas para usuarios.
 export async function buscarAcceso(token: string): Promise<AccesoEnlace | null> {
   const { data } = await supabaseAdmin()
     .from("enlace_acceso")
-    .select("cliente_id, token, password_hash, vence_en, intentos_fallidos, bloqueado_hasta")
+    .select("cliente_id, token, password_hash, vence_en, intentos_fallidos, bloqueado_hasta, clientes(activo)")
     .eq("token", token)
     .maybeSingle();
-  return data ?? null;
+  if (!data) return null;
+  const { clientes, ...acceso } = data as typeof data & { clientes: { activo: boolean } | null };
+  return { ...acceso, cliente_activo: clientes?.activo ?? false };
 }
 
 export const venció = (acceso: AccesoEnlace) => new Date(acceso.vence_en).getTime() < Date.now();

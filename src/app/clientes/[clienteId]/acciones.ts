@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  buscarAcceso, DIAS_VIGENCIA, generarContrasena, generarToken, hashContrasena, sesionValida, venció,
+  buscarAcceso, DIAS_VIGENCIA, generarContrasena, generarToken, hashContrasena, MENSAJE_CLIENTE_INACTIVO, sesionValida, venció,
 } from "@/lib/enlace";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ESTADO_SAT } from "@/lib/catalogos-cfdi";
@@ -355,6 +355,8 @@ export async function subirXmlPorEnlace(
   const acceso = await buscarAcceso(token);
   if (!acceso) return { resultados: [], error: "Este enlace no es válido o ya fue reemplazado." };
   if (venció(acceso)) return { resultados: [], error: "Este enlace venció. Pide uno nuevo a tu contador." };
+  // H2: un cliente desactivado no recibe facturas nuevas, tampoco por su enlace (como en la bandeja de entrada).
+  if (!acceso.cliente_activo) return { resultados: [], error: MENSAJE_CLIENTE_INACTIVO };
   // La contraseña se comprobó al abrir la página; la sesión firmada demuestra que se hizo.
   if (!(await sesionValida(token))) return { resultados: [], error: "Escribe la contraseña para continuar." };
   const admin = supabaseAdmin();
