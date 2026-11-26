@@ -433,14 +433,14 @@ export default async function ResumenPage({
         >
           Exportar a CSV
         </a>
-        <button
-          type="button"
-          disabled
-          title="Pendiente: tarea D3"
-          className="h-11 rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold disabled:opacity-60"
+        {/* D3: el resumen en PDF, con encabezado del cliente y del periodo. */}
+        <a
+          href={`/resumen/exportar?cliente=${cliente.id}&periodo=${periodo.mesAnio}&formato=pdf`}
+          download
+          className="inline-flex h-11 items-center rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold text-text no-underline hover:border-accent"
         >
           Exportar a PDF
-        </button>
+        </a>
       </div>
     </AppShell>
   );
