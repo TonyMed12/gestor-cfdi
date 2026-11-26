@@ -975,12 +975,18 @@ export async function getClavesEnUso(paginaPedida = 1): Promise<{ claves: ClaveE
   return { claves: lista, pagina };
 }
 
-// Enlace vigente del cliente (RF-04). Solo llamar para administrador y contador: la contraseña no se guarda
-// en claro, así que aquí solo se devuelve el token y la fecha de vencimiento.
+// Enlace vigente del cliente (RF-04). La contraseña no se guarda en claro, así que aquí solo se devuelve el token y la
+// fecha de vencimiento.
 export async function getEnlaceEnvio(clienteId: string): Promise<{ token: string; venceEn: string } | null> {
-  // G1: la tabla del enlace solo se lee con la clave de servicio (salta RLS). Antes se comprueba con la sesión
-  // que el cliente es del despacho de quien pregunta, para no depender de que la página ya lo haya hecho.
-  const { data: propio } = await (await supabaseServidor()).from("clientes").select("id").eq("id", clienteId).maybeSingle();
+  // La tabla del enlace solo se lee con la clave de servicio (salta RLS). Antes se comprueba con la sesión, sin depender
+  // de que la página ya lo haya hecho: que quien pregunta sea administrador o contador (G9) y que el cliente sea de su
+  // despacho (G1). A un auxiliar nunca se le devuelve el token.
+  const supabase = await supabaseServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: yo } = await supabase.from("usuario").select("rol").eq("id", user.id).maybeSingle();
+  if (yo?.rol !== "administrador" && yo?.rol !== "contador") return null;
+  const { data: propio } = await supabase.from("clientes").select("id").eq("id", clienteId).maybeSingle();
   if (!propio) return null;
   const { data } = await supabaseAdmin()
     .from("enlace_acceso").select("token, vence_en").eq("cliente_id", clienteId).maybeSingle();
