@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { Paginacion } from "@/components/Paginacion";
-import { clientesEnDetalles, describirDetalle } from "@/lib/bitacora-texto";
+import { ACCIONES, clientesEnDetalles, describirDetalle } from "@/lib/bitacora-texto";
 import { NOMBRE_APP } from "@/lib/config";
 import { getPerfil } from "@/lib/datos";
 import { describirPagina, leerPagina, rangoDePagina } from "@/lib/paginacion";
@@ -8,13 +8,6 @@ import { supabaseServidor } from "@/lib/supabase-servidor";
 
 export const metadata = { title: `Bitácora · ${NOMBRE_APP}` };
 
-const ACCIONES: Record<string, string> = {
-  subio: "Subió un archivo",
-  aprobo: "Aprobó la clasificación",
-  corrigio: "Corrigió o rechazó",
-  exporto: "Exportó",
-  cerro_periodo: "Cerró un periodo",
-};
 
 const fecha = (iso: string) =>
   new Date(iso).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" });
@@ -53,12 +46,22 @@ export default async function BitacoraPage({ searchParams }: { searchParams: Pro
 
   return (
     <AppShell active="/bitacora">
-      <header className="flex flex-col gap-1">
-        <span className="text-sm text-text-muted">{perfil.despacho}</span>
-        <h1 className="m-0 text-[30px] font-bold">Bitácora</h1>
-        <p className="m-0 text-[15px] text-text-muted">
-          Quién hizo cada acción y cuándo. Los registros no se pueden modificar ni borrar. Lo más reciente va primero.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-text-muted">{perfil.despacho}</span>
+          <h1 className="m-0 text-[30px] font-bold">Bitácora</h1>
+          <p className="m-0 text-[15px] text-text-muted">
+            Quién hizo cada acción y cuándo. Los registros no se pueden modificar ni borrar. Lo más reciente va primero.
+          </p>
+        </div>
+        {/* D7: toda la bitácora en CSV (solo el administrador, igual que esta página). */}
+        <a
+          href="/bitacora/exportar"
+          download
+          className="inline-flex h-11 items-center rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold text-text no-underline hover:border-accent"
+        >
+          Exportar a CSV
+        </a>
       </header>
 
       <section className="flex flex-col rounded-xl border border-border bg-surface">

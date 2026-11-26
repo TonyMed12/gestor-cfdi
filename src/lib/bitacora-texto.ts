@@ -1,6 +1,15 @@
 // Detalle de la bitácora en palabras (D6). Para exportaciones y cierres de periodo, y para los cambios en un periodo
 // cerrado (D4); lo demás se muestra como antes. Sin dependencias, para probarlo solo (pruebas/bitacora-texto.test.mjs).
 
+// Nombre de cada acción, para la pantalla y la exportación (D7).
+export const ACCIONES: Record<string, string> = {
+  subio: "Subió un archivo",
+  aprobo: "Aprobó la clasificación",
+  corrigio: "Corrigió o rechazó",
+  exporto: "Exportó",
+  cerro_periodo: "Cerró un periodo",
+};
+
 const FORMATOS: Record<string, string> = { csv: "CSV", xlsx: "Excel", pdf: "PDF" };
 
 const MESES = [
@@ -23,6 +32,11 @@ export function describirDetalle(
   const cliente = typeof detalle.cliente_id === "string" ? clientes.get(detalle.cliente_id) : undefined;
   const de = cliente ? ` de ${cliente}` : "";
 
+  // D7: la bitácora también registra cuando se descarga a sí misma.
+  if (accion === "exporto" && detalle.tipo === "bitacora") {
+    const n = typeof detalle.registros === "number" ? detalle.registros : null;
+    return `Bitácora en CSV${n === null ? "" : n === 1 ? " (1 registro)" : ` (${n} registros)`}`;
+  }
   if (accion === "exporto" && typeof detalle.formato === "string") {
     const formato = FORMATOS[detalle.formato] ?? detalle.formato;
     const cuantas = facturas(detalle.facturas);
