@@ -1,4 +1,6 @@
+import { registrarAccion } from "@/lib/bitacora";
 import { getCliente, getResumenPeriodo } from "@/lib/datos";
+import { supabaseServidor } from "@/lib/supabase-servidor";
 import { aCsv, filasCsv, libroResumen, nombreArchivo, type DatosExportacion } from "@/lib/exportar-resumen";
 import { describirCierre } from "@/lib/cierre";
 import { esMesAnio, nombreMes } from "@/lib/formato";
@@ -21,6 +23,21 @@ export async function GET(request: Request) {
   const cliente = await getCliente(clienteId);
   const datos = cliente ? await getResumenPeriodo(cliente.id, mesAnio) : undefined;
   if (!cliente || !datos) return new Response("No se encontró ese cliente o ese periodo.", { status: 404 });
+
+  // D6 (RF-47): quién exportó qué periodo, en qué formato y cuándo (la base pone quién y cuándo).
+  // Primero la bitácora: si no se puede registrar, no se entrega el archivo.
+  try {
+    await registrarAccion(await supabaseServidor(), "exporto", {
+      formato,
+      cliente_id: cliente.id,
+      mes_anio: datos.periodo.mesAnio,
+      estado_periodo: datos.periodo.estado,
+      facturas: datos.facturas.length,
+      incluidas: datos.resumen.incluidas,
+    });
+  } catch {
+    return new Response("No se pudo registrar la exportación en la bitácora. Intenta de nuevo.", { status: 500 });
+  }
 
   const exportacion: DatosExportacion = {
     cliente: { razonSocial: cliente.razonSocial, rfc: cliente.rfc },
