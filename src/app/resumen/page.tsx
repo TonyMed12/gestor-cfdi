@@ -18,9 +18,13 @@ const pesos = (n: number) => dinero(String(n), "MXN");
 export default async function ResumenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cliente?: string; periodo?: string }>;
+  searchParams: Promise<{ cliente?: string; periodo?: string; tipo?: string; categoria?: string }>;
 }) {
-  const { cliente: clienteId, periodo: mesAnio } = await searchParams;
+  const { cliente: clienteId, periodo: mesAnio, tipo: tipoPedido, categoria: categoriaPedida } = await searchParams;
+  // C10: la categoría elegida en la tabla (?tipo=gasto|ingreso&categoria=Nombre) muestra las facturas que la componen.
+  const tipoCategoria = tipoPedido === "ingreso" ? "Ingreso" : tipoPedido === "gasto" ? "Gasto" : undefined;
+  const categoriaElegida =
+    tipoCategoria && categoriaPedida ? ({ tipo: tipoCategoria, nombre: categoriaPedida.slice(0, 120) } as const) : undefined;
   const [clientes, periodosPorCliente, perfil] = await Promise.all([getClientes(), getPeriodosPorCliente(), getPerfil()]);
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const cliente = clienteId && /^[0-9a-f-]{36}$/i.test(clienteId) ? await getCliente(clienteId) : undefined;
@@ -31,7 +35,7 @@ export default async function ResumenPage({
     redirect(`/resumen?cliente=${cliente.id}&periodo=${recientes[0].mesAnio}`);
   }
 
-  const datos = cliente && mesAnio && esMesAnio(mesAnio) ? await getResumenPeriodo(cliente.id, mesAnio) : undefined;
+  const datos = cliente && mesAnio && esMesAnio(mesAnio) ? await getResumenPeriodo(cliente.id, mesAnio, categoriaElegida) : undefined;
   const selector = (
     <SelectorResumen
       clientes={clientes.map((c) => ({ id: c.id, razonSocial: c.razonSocial, periodos: periodosPorCliente[c.id] ?? [] }))}
@@ -76,7 +80,14 @@ export default async function ResumenPage({
     );
   }
 
-  const { periodo, resumen, excluidas } = datos;
+  const { periodo, resumen, excluidas, facturasCategoria } = datos;
+  const urlResumen = `/resumen?cliente=${cliente.id}&periodo=${periodo.mesAnio}`;
+  const urlCategoria = (tipo: string, categoria: string) =>
+    `${urlResumen}&tipo=${tipo.toLowerCase()}&categoria=${encodeURIComponent(categoria)}#facturas-de-categoria`;
+  const esElegida = (tipo: string, categoria: string) =>
+    categoriaElegida?.tipo === tipo && categoriaElegida.nombre === categoria;
+  // La fila elegida, si existe en este periodo (con otro cliente o periodo puede no existir).
+  const filaElegida = resumen.filas.find((f) => esElegida(f.tipo, f.categoria));
   // C5: motivos de exclusión con su conteo, y que incluidas + fuera sumen las facturas del periodo.
   const grupos = agruparExclusiones(excluidas);
   const cuadra = cuadraConPeriodo(resumen.incluidas, excluidas.length, periodo.facturas);
@@ -142,7 +153,7 @@ export default async function ResumenPage({
         <div className="border-b border-border px-5 py-4.5">
           <h2 className="m-0 text-lg font-semibold">Por categoría</h2>
           <p className="m-0 text-sm text-text-muted">
-            Importes antes de impuestos. Las notas de crédito restan. Un gasto es deducible si así se marcó la factura en
+            Da clic en una categoría para ver sus facturas. Importes antes de impuestos. Las notas de crédito restan. Un gasto es deducible si así se marcó la factura en
             la revisión o, si no se marcó, si su categoría es deducible. IVA acreditable: el IVA trasladado al 16 % u
             8 % de los gastos deducibles; el IVA a tasa 0 %, exento o a una tasa no vigente no se acredita.
           </p>
@@ -170,12 +181,28 @@ export default async function ResumenPage({
               </thead>
               <tbody>
                 {filas.map((f) => (
-                  <tr key={`${f.tipo}-${f.categoria}`} className="border-t border-[#EEF1F4]">
+                  <tr
+                    key={`${f.tipo}-${f.categoria}`}
+                    aria-current={esElegida(f.tipo, f.categoria) ? "true" : undefined}
+                    className={`border-t border-[#EEF1F4] ${esElegida(f.tipo, f.categoria) ? "bg-[#EEF4FF]" : ""}`}
+                  >
                     <td className="px-5 py-3.5">
                       <Badge variant={f.tipo === "Ingreso" ? "success" : "neutral"}>{f.tipo}</Badge>
                     </td>
-                    <td className="px-3 py-3.5 font-semibold">{f.categoria}</td>
-                    <td className="px-3 py-3.5 text-right">{f.facturas}</td>
+                    <td className="px-3 py-3.5 font-semibold">
+                      <Link
+                        href={urlCategoria(f.tipo, f.categoria)}
+                        title={`Ver las facturas de ${f.categoria}`}
+                        className="text-text underline decoration-[#8A96A3] underline-offset-4 hover:text-accent hover:decoration-accent"
+                      >
+                        {f.categoria}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3.5 text-right">
+                      <Link href={urlCategoria(f.tipo, f.categoria)} className="text-accent">
+                        {f.facturas}
+                      </Link>
+                    </td>
                     <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.importe)}</td>
                     <td className="px-3 py-3.5 text-right font-mono text-sm">
                       {f.tipo === "Gasto" ? pesos(f.gastoDeducible) : "—"}
@@ -194,6 +221,110 @@ export default async function ResumenPage({
           </div>
         )}
       </section>
+
+      {categoriaElegida && (
+        <section
+          id="facturas-de-categoria"
+          aria-labelledby="titulo-facturas-de-categoria"
+          className="flex scroll-mt-6 flex-col rounded-xl border border-border bg-surface"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4.5">
+            <div className="flex flex-col gap-1">
+              <h2 id="titulo-facturas-de-categoria" className="m-0 text-lg font-semibold">
+                {categoriaElegida.tipo} · {categoriaElegida.nombre}
+              </h2>
+              <p className="m-0 text-sm text-text-muted">
+                {filaElegida
+                  ? `${filaElegida.facturas === 1 ? "La factura del periodo que compone" : `Las ${filaElegida.facturas} facturas del periodo que componen`} esta categoría, con lo que aporta cada una. Solo cuentan sus conceptos de esta categoría; las notas de crédito restan.`
+                  : "Esta categoría no tiene facturas incluidas en este periodo."}
+              </p>
+            </div>
+            <Link href={urlResumen} className="text-sm font-semibold">
+              Cerrar detalle
+            </Link>
+          </div>
+          {filaElegida && facturasCategoria && facturasCategoria.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1080px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="text-left text-[13px] text-text-muted">
+                    <th className="px-5 py-3 font-semibold">{filaElegida.tipo === "Gasto" ? "Emisor" : "Receptor"}</th>
+                    <th className="px-3 py-3 font-semibold">Fecha</th>
+                    <th className="px-3 py-3 font-semibold">Folio fiscal</th>
+                    <th className="px-3 py-3 text-right font-semibold">Importe</th>
+                    <th className="px-3 py-3 text-right font-semibold">Deducible</th>
+                    <th className="px-3 py-3 text-right font-semibold">IVA trasladado</th>
+                    <th className="px-3 py-3 text-right font-semibold">IVA acreditable</th>
+                    {hayIeps && <th className="px-3 py-3 text-right font-semibold">IEPS</th>}
+                    <th className="px-3 py-3 text-right font-semibold">ISR retenido</th>
+                    <th className="px-3 py-3 text-right font-semibold">IVA retenido</th>
+                    <th aria-label="Acciones" className="px-5 py-3 font-semibold" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {facturasCategoria.map((f) => (
+                    <tr key={f.id} className="border-t border-[#EEF1F4]">
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{f.contraparte}</span>
+                          <span className="text-[13px] text-text-muted">
+                            <span className="font-mono">{f.contraparteRfc}</span>
+                            {f.tipoComprobante === "E" && " · Nota de crédito"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5">
+                        {new Date(f.fecha).toLocaleDateString("es-MX", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          timeZone: "America/Mexico_City",
+                        })}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[13px]">{f.uuid}</td>
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.importe)}</td>
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">
+                        {filaElegida.tipo === "Gasto" ? pesos(f.gastoDeducible) : "—"}
+                      </td>
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.ivaTrasladado)}</td>
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">
+                        {filaElegida.tipo === "Gasto" ? pesos(f.ivaAcreditable) : "—"}
+                      </td>
+                      {hayIeps && <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.iepsTrasladado)}</td>}
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.isrRetenido)}</td>
+                      <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(f.ivaRetenido)}</td>
+                      <td className="px-5 py-3.5">
+                        <Link href={`/revision/${f.id}`} className="whitespace-nowrap text-sm font-semibold">
+                          Ver factura
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border font-semibold">
+                    <td className="px-5 py-3.5" colSpan={3}>
+                      Total de la categoría
+                    </td>
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(filaElegida.importe)}</td>
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">
+                      {filaElegida.tipo === "Gasto" ? pesos(filaElegida.gastoDeducible) : "—"}
+                    </td>
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(filaElegida.ivaTrasladado)}</td>
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">
+                      {filaElegida.tipo === "Gasto" ? pesos(filaElegida.ivaAcreditable) : "—"}
+                    </td>
+                    {hayIeps && <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(filaElegida.iepsTrasladado)}</td>}
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(filaElegida.isrRetenido)}</td>
+                    <td className="px-3 py-3.5 text-right font-mono text-sm">{pesos(filaElegida.ivaRetenido)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="fuera-del-resumen" className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5.5">
         <div className="flex flex-col gap-1">

@@ -11,7 +11,14 @@ import {
 } from "./categorias-por-defecto";
 import { REGLAS_BASE } from "./reglas-base-claves";
 import type { BusquedaUuid } from "./busqueda";
-import { calcularResumen, type FacturaResumen, type ResumenPeriodo } from "./resumen";
+import {
+  calcularResumen,
+  facturasDeCategoria,
+  type AporteFactura,
+  type FacturaResumen,
+  type ResumenPeriodo,
+  type TipoFila,
+} from "./resumen";
 import { dinero } from "./formato";
 import { esDeducible } from "./deducibilidad";
 
@@ -584,6 +591,8 @@ type FilaFacturaResumen = {
   motivo_exclusion: string | null;
   deducible: boolean | null;
   total: string;
+  uuid_fiscal: string;
+  emitido_en: string;
   rfc_emisor: string;
   nombre_emisor: string | null;
   rfc_receptor: string;
@@ -597,12 +606,32 @@ type FilaFacturaResumen = {
 
 export type ExclusionDetalle = { id: string; motivo: string; descripcion: string };
 
+// Una factura de la categoría elegida en el resumen (C10), con lo que aporta a esa fila.
+export type FacturaDeCategoria = AporteFactura & {
+  uuid: string;
+  fecha: string;
+  relacion: "emitida" | "recibida";
+  tipoComprobante: string;
+  contraparte: string;
+  contraparteRfc: string;
+};
+
 // Resumen de un cliente en un periodo (C3), calculado con calcularResumen (src/lib/resumen.ts).
 // La categoría de cada concepto es la que quedó fija al aprobar la factura.
+// Con `categoria`, también devuelve las facturas que componen esa fila (C10).
 export async function getResumenPeriodo(
   clienteId: string,
   mesAnio: string,
-): Promise<{ periodo: PeriodoCliente; resumen: ResumenPeriodo; excluidas: ExclusionDetalle[] } | undefined> {
+  categoria?: { tipo: TipoFila; nombre: string },
+): Promise<
+  | {
+      periodo: PeriodoCliente;
+      resumen: ResumenPeriodo;
+      excluidas: ExclusionDetalle[];
+      facturasCategoria?: FacturaDeCategoria[];
+    }
+  | undefined
+> {
   const supabase = await supabaseServidor();
   const { data: periodo, error } = await supabase
     .from("periodo")
@@ -616,7 +645,7 @@ export async function getResumenPeriodo(
   const { data, error: errorFacturas } = await supabase
     .from("factura")
     .select(
-      "id, tipo_comprobante, relacion, moneda, estado_revision, estado_sat, motivo_exclusion, deducible, total, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, concepto(importe, categoria(nombre, deducible_default), impuesto(tipo, impuesto, tasa, importe))",
+      "id, tipo_comprobante, relacion, moneda, estado_revision, estado_sat, motivo_exclusion, deducible, total, uuid_fiscal, emitido_en, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, concepto(importe, categoria(nombre, deducible_default), impuesto(tipo, impuesto, tasa, importe))",
     )
     .eq("periodo_id", periodo.id)
     .order("emitido_en");
@@ -643,14 +672,34 @@ export async function getResumenPeriodo(
   const resumen = calcularResumen(facturas);
 
   const porId = new Map(filas.map((f) => [f.id, f]));
+  // Con quién es la factura: el emisor si la recibió el cliente, el receptor si la emitió.
+  const contraparteDe = (f: FilaFacturaResumen) => {
+    const recibida = f.relacion === "recibida";
+    const rfc = recibida ? f.rfc_emisor : f.rfc_receptor;
+    return { nombre: (recibida ? f.nombre_emisor : f.nombre_receptor) ?? rfc, rfc };
+  };
   const excluidas = resumen.excluidas.map((e) => {
     const f = porId.get(e.id)!;
-    const recibida = f.relacion === "recibida";
-    const contraparte = (recibida ? f.nombre_emisor : f.nombre_receptor) ?? (recibida ? f.rfc_emisor : f.rfc_receptor);
-    return { ...e, descripcion: `${contraparte} · ${dinero(f.total, f.moneda)}` };
+    return { ...e, descripcion: `${contraparteDe(f).nombre} · ${dinero(f.total, f.moneda)}` };
   });
 
-  return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas };
+  const facturasCategoria = categoria
+    ? facturasDeCategoria(facturas, categoria.tipo, categoria.nombre).map((a) => {
+        const f = porId.get(a.id)!;
+        const { nombre, rfc } = contraparteDe(f);
+        return {
+          ...a,
+          uuid: f.uuid_fiscal,
+          fecha: f.emitido_en,
+          relacion: f.relacion,
+          tipoComprobante: f.tipo_comprobante,
+          contraparte: nombre,
+          contraparteRfc: rfc,
+        };
+      })
+    : undefined;
+
+  return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas, facturasCategoria };
 }
 
 export type OpcionPeriodo = { mesAnio: string; estado: "abierto" | "cerrado" };

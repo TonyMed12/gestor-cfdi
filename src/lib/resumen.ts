@@ -188,3 +188,30 @@ export function calcularResumen(facturas: FacturaResumen[]): ResumenPeriodo {
     excluidas,
   };
 }
+
+export type TipoFila = FilaResumen["tipo"];
+
+// Lo que aporta una factura a una fila del resumen (C10).
+export type AporteFactura = { id: string } & Omit<FilaResumen, "tipo" | "categoria" | "facturas">;
+
+// Facturas que componen una fila del resumen (C10): las incluidas que tienen conceptos de esa categoría, con lo que
+// aporta cada una. Se calcula con calcularResumen factura por factura, así las cifras son las mismas que las de la
+// fila (las notas de crédito restan) y la suma de los aportes da el total de la fila.
+export function facturasDeCategoria(facturas: FacturaResumen[], tipo: TipoFila, categoria: string): AporteFactura[] {
+  const aportes: AporteFactura[] = [];
+  for (const f of facturas) {
+    const fila = calcularResumen([f]).filas.find((r) => r.tipo === tipo && r.categoria === categoria);
+    if (!fila) continue; // no entra al resumen o no tiene conceptos de esa categoría
+    aportes.push({
+      id: f.id,
+      importe: fila.importe,
+      gastoDeducible: fila.gastoDeducible,
+      ivaTrasladado: fila.ivaTrasladado,
+      ivaAcreditable: fila.ivaAcreditable,
+      iepsTrasladado: fila.iepsTrasladado,
+      isrRetenido: fila.isrRetenido,
+      ivaRetenido: fila.ivaRetenido,
+    });
+  }
+  return aportes;
+}

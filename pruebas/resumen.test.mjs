@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { esDeducible } from "../src/lib/deducibilidad.ts";
-import { agruparExclusiones, calcularResumen, cuadraConPeriodo, motivoExclusion } from "../src/lib/resumen.ts";
+import { agruparExclusiones, calcularResumen, cuadraConPeriodo, facturasDeCategoria, motivoExclusion } from "../src/lib/resumen.ts";
 
 test("las facturas fuera del resumen se agrupan por motivo y el total cuadra con el periodo (C5)", () => {
   const r = calcularResumen([
@@ -41,6 +41,32 @@ test("la marca por factura (A7) gana sobre la categoría en gastos deducibles e 
     conceptos: [{ importe: 500, categoria: "Gastos no deducibles", deducible: esDeducible(true, false), impuestos: [iva(500)] }],
   })]).totales;
   assert.deepEqual([r.gastosDeducibles, r.ivaAcreditable], [500, 80]);
+});
+
+test("C10: las facturas de una categoría son las incluidas que la componen y suman lo mismo que su fila", () => {
+  const papeleria = "Gastos de oficina y papelería";
+  const facturas = [
+    factura({ id: "A" }),
+    factura({ id: "B", total: 580, conceptos: [{ importe: 500, categoria: papeleria, deducible: false, impuestos: [iva(500)] }] }),
+    factura({ id: "C", tipoComprobante: "E", total: 116, conceptos: [{ importe: 100, categoria: papeleria, deducible: true, impuestos: [iva(100)] }] }),
+    factura({ id: "D", estadoRevision: "por_revisar" }), // pendiente: no entra
+    factura({ id: "E", estadoSat: "cancelada" }), // cancelada: no entra
+    factura({ id: "F", total: 116, conceptos: [{ importe: 100, categoria: "Combustible", deducible: true, impuestos: [iva(100)] }] }),
+    factura({ id: "G", relacion: "emitida", conceptos: [{ importe: 1000, categoria: papeleria, deducible: true, impuestos: [iva(1000)] }] }),
+  ];
+  const aportes = facturasDeCategoria(facturas, "Gasto", papeleria);
+  assert.deepEqual(aportes.map((a) => a.id), ["A", "B", "C"]); // ni pendientes, ni canceladas, ni otra categoría, ni ingresos
+  assert.deepEqual(aportes.find((a) => a.id === "C").importe, -100); // la nota de crédito resta
+  assert.deepEqual([aportes[1].gastoDeducible, aportes[1].ivaAcreditable], [0, 0]); // marcada no deducible (A7)
+
+  const fila = calcularResumen(facturas).filas.find((f) => f.tipo === "Gasto" && f.categoria === papeleria);
+  const suma = (campo) => aportes.reduce((s, a) => s + Math.round(a[campo] * 100), 0) / 100;
+  for (const campo of ["importe", "gastoDeducible", "ivaTrasladado", "ivaAcreditable", "isrRetenido", "ivaRetenido"]) {
+    assert.equal(suma(campo), fila[campo], campo);
+  }
+  assert.equal(aportes.length, fila.facturas);
+  assert.deepEqual(facturasDeCategoria(facturas, "Ingreso", papeleria).map((a) => a.id), ["G"]);
+  assert.deepEqual(facturasDeCategoria(facturas, "Gasto", "No existe"), []);
 });
 
 // Fábrica de facturas de prueba: aprobada, vigente, de ingreso (I), en pesos. Cada prueba cambia lo que necesita.
