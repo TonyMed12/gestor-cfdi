@@ -81,6 +81,7 @@ async function preparar() {
     `);
   }
   await db.query("select set_config('request.jwt.claim.sub', '', false)");
+  await db.exec(`insert into public.intento_enlace (ip_huella) values ('${"f".repeat(64)}')`); // G6
 }
 
 // Cada tabla o vista con datos de un despacho: cómo reconocer las filas de B y una columna para intentar cambiarla.
@@ -109,6 +110,8 @@ const TABLAS = {
 };
 // Catálogos del SAT: son públicos a propósito (iguales para todos los despachos).
 const PUBLICAS = ["public.cat_clave_prod_serv", "public.cat_regimen_fiscal", "public.cat_uso_cfdi"];
+// Tablas que solo usa el servidor con la clave de servicio: ningún usuario las lee ni escribe (ni de su despacho).
+const SOLO_SERVIDOR = { "public.intento_enlace": `insert into public.intento_enlace (ip_huella) values ('x')` };
 
 // Ejecuta como un usuario de Supabase: rol de Postgres y usuario de la sesión (auth.uid()).
 async function como(usuario, fn) {
@@ -163,7 +166,7 @@ test("G1: todas las tablas de la base están en esta prueba o son catálogos pú
   const r = await db.query(`
     select n.nspname || '.' || c.relname as t from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relkind in ('r', 'v', 'm')`);
-  const faltan = r.rows.map((x) => x.t).filter((t) => !TABLAS[t] && !PUBLICAS.includes(t));
+  const faltan = r.rows.map((x) => x.t).filter((t) => !TABLAS[t] && !PUBLICAS.includes(t) && !SOLO_SERVIDOR[t]);
   assert.deepEqual(faltan, [], "Tabla nueva sin prueba de aislamiento: agrégala a TABLAS");
   const sinRls = await db.query(`
     select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -307,6 +310,20 @@ test("G1: dentro de su propio despacho, A sigue trabajando normal (las reglas no
   assert.deepEqual(fallaron, []);
 });
 
+test("G1: las tablas del servidor (intentos del enlace, G6) no las lee ni escribe ningún usuario", { skip: omitir }, async () => {
+  const logrados = [];
+  for (const [nombre, usuario] of [...USUARIOS_A, ["administrador de B", B.admin]]) {
+    for (const [t, insertar] of Object.entries(SOLO_SERVIDOR)) {
+      for (const [que, sql] of [["leer", `select 1 from ${t}`], ["escribir", insertar], ["borrar", `delete from ${t}`], ["cambiar", `update ${t} set creado_en = now()`]]) {
+        const n = await como(usuario, () => intentar(sql));
+        if (n !== 0 && !String(n).startsWith("error")) logrados.push(`${nombre}: ${que} ${t} (${n})`);
+      }
+    }
+  }
+  assert.deepEqual(logrados, []);
+  assert.equal((await db.query("select count(*)::int n from public.intento_enlace")).rows[0].n, 1);
+});
+
 test("G1: las funciones que un usuario puede llamar no revelan datos de B", { skip: omitir }, async () => {
   // Funciones de public que se ejecutan con permisos del dueño y que un usuario puede llamar por la API.
   const r = await db.query(`
@@ -333,7 +350,7 @@ test("G1: cada uso de la clave de servicio (que salta RLS) está revisado en doc
     "src/app/revision/[facturaId]/acciones.ts": 2,
     "src/app/usuarios/acciones.ts": 2,
     "src/lib/datos.ts": 1,
-    "src/lib/enlace.ts": 1,
+    "src/lib/enlace.ts": 3, // buscarAcceso y, desde G6, los intentos por IP
   };
   const usos = {};
   const recorrer = (dir) => {

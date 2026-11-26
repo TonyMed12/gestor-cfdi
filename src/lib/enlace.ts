@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { bloqueoPorIp, MAX_FALLOS_POR_IP, MINUTOS_VENTANA_IP } from "@/lib/limite-ip";
 
 // Enlace de envío del cliente (RF-04): token en la dirección + contraseña temporal + sesión firmada.
 
@@ -82,4 +83,31 @@ export async function sesionValida(token: string): Promise<boolean> {
   if (t !== token || !sig || Number(expira) < Date.now()) return false;
   const esperado = firma(`${t}.${expira}`);
   return sig.length === esperado.length && timingSafeEqual(Buffer.from(sig), Buffer.from(esperado));
+}
+
+// ---------- Límite por dirección IP (G6) ----------
+// Se guarda una huella de la IP (HMAC con una clave del servidor), no la IP: así no se almacena la dirección del cliente.
+export const huellaIp = (ip: string) =>
+  createHmac("sha256", createHash("sha256").update(`ip-enlace:${clave().toString("hex")}`).digest()).update(ip).digest("hex");
+
+// ¿Esta conexión ya agotó sus intentos? Si la tabla no se puede leer (por ejemplo, falta el script 25), no se bloquea:
+// el bloqueo por enlace sigue funcionando y el error queda en el registro del servidor.
+export async function bloqueoDeIp(ipHuella: string) {
+  const desde = new Date(Date.now() - MINUTOS_VENTANA_IP * 60_000).toISOString();
+  const { data, error } = await supabaseAdmin()
+    .from("intento_enlace").select("creado_en").eq("ip_huella", ipHuella).gt("creado_en", desde)
+    .order("creado_en", { ascending: false }).limit(MAX_FALLOS_POR_IP);
+  if (error) {
+    console.error("Límite por IP del enlace:", error.message);
+    return { bloqueada: false } as const;
+  }
+  return bloqueoPorIp(data.map((d) => new Date(d.creado_en)), new Date());
+}
+
+// Registra un intento fallido de esta conexión y borra los de más de un día.
+export async function registrarFalloDeIp(ipHuella: string) {
+  const admin = supabaseAdmin();
+  const { error } = await admin.from("intento_enlace").insert({ ip_huella: ipHuella });
+  if (error) console.error("Límite por IP del enlace:", error.message);
+  await admin.from("intento_enlace").delete().lt("creado_en", new Date(Date.now() - 86_400_000).toISOString());
 }

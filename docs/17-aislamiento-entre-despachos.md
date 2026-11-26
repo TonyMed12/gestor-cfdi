@@ -24,6 +24,7 @@ Crea dos despachos, A y B, con datos en cada tabla y archivos en el almacenamien
 | Mover | Nadie de A pasa sus propios datos a B. Son 18 intentos: cambiar su cliente, factura, concepto, categoría o regla para que apunte a B. |
 | Trabajo normal | Dentro de A, todo sigue funcionando: crear categorías, clasificar conceptos, crear reglas, escribir en la bitácora y editar clientes. |
 | Funciones | Las funciones que un usuario puede llamar por la API solo responden sobre su propio despacho. Si aparece una función nueva, la prueba falla hasta que se revise. |
+| Tablas del servidor | `intento_enlace` (G6) no la lee ni la escribe ningún usuario, de ningún despacho. |
 | Tablas nuevas | Si se agrega una tabla sin incluirla en la prueba, o sin RLS, la prueba falla. |
 | Clave de servicio | Si aparece un uso nuevo de `supabaseAdmin()` en `src/`, la prueba falla hasta que se revise y se agregue a la tabla de abajo. |
 
@@ -68,6 +69,7 @@ Además se reforzó `getEnlaceEnvio` (`src/lib/datos.ts`). Lee el token del enla
 | Descarga del resumen (CSV, Excel, PDF) | `resumen/exportar/route.ts` | No | Lee cliente y facturas con la sesión (RLS) |
 | `getEnlaceEnvio` | `lib/datos.ts` | Sí, al leer el token | Comprueba el cliente con la sesión (corregido en G1) |
 | `buscarAcceso` | `lib/enlace.ts` | Sí | Busca por token; lo usan solo las acciones del enlace |
+| `bloqueoDeIp`, `registrarFalloDeIp` (G6) | `lib/enlace.ts` | Sí | Solo la tabla `intento_enlace`, con la huella de la IP de quien hace la petición; no toca datos de ningún despacho |
 
 ## Pendiente fuera de G1
 
