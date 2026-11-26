@@ -15,10 +15,10 @@ import {
   calcularResumen,
   facturasDeCategoria,
   type AporteFactura,
-  type FacturaResumen,
   type ResumenPeriodo,
   type TipoFila,
 } from "./resumen";
+import type { FacturaExportable } from "./exportar-resumen";
 import { dinero } from "./formato";
 import { esDeducible } from "./deducibilidad";
 
@@ -598,6 +598,7 @@ type FilaFacturaResumen = {
   rfc_receptor: string;
   nombre_receptor: string | null;
   concepto: {
+    descripcion: string;
     importe: string;
     categoria: { nombre: string; deducible_default: boolean } | null;
     impuesto: { tipo: string; impuesto: string; tasa: string; importe: string }[];
@@ -619,6 +620,7 @@ export type FacturaDeCategoria = AporteFactura & {
 // Resumen de un cliente en un periodo (C3), calculado con calcularResumen (src/lib/resumen.ts).
 // La categoría de cada concepto es la que quedó fija al aprobar la factura.
 // Con `categoria`, también devuelve las facturas que componen esa fila (C10).
+// `facturas` son todas las del periodo con sus datos, para exportar el detalle (D1).
 export async function getResumenPeriodo(
   clienteId: string,
   mesAnio: string,
@@ -629,6 +631,7 @@ export async function getResumenPeriodo(
       resumen: ResumenPeriodo;
       excluidas: ExclusionDetalle[];
       facturasCategoria?: FacturaDeCategoria[];
+      facturas: FacturaExportable[];
     }
   | undefined
 > {
@@ -645,15 +648,21 @@ export async function getResumenPeriodo(
   const { data, error: errorFacturas } = await supabase
     .from("factura")
     .select(
-      "id, tipo_comprobante, relacion, moneda, estado_revision, estado_sat, motivo_exclusion, deducible, total, uuid_fiscal, emitido_en, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, concepto(importe, categoria(nombre, deducible_default), impuesto(tipo, impuesto, tasa, importe))",
+      "id, tipo_comprobante, relacion, moneda, estado_revision, estado_sat, motivo_exclusion, deducible, total, uuid_fiscal, emitido_en, rfc_emisor, nombre_emisor, rfc_receptor, nombre_receptor, concepto(descripcion, importe, categoria(nombre, deducible_default), impuesto(tipo, impuesto, tasa, importe))",
     )
     .eq("periodo_id", periodo.id)
     .order("emitido_en");
   if (errorFacturas) throw new Error(`No se pudo calcular el resumen: ${errorFacturas.message}`);
   const filas = data as unknown as FilaFacturaResumen[];
 
-  const facturas: FacturaResumen[] = filas.map((f) => ({
+  const facturas: FacturaExportable[] = filas.map((f) => ({
     id: f.id,
+    uuid: f.uuid_fiscal,
+    fecha: f.emitido_en,
+    rfcEmisor: f.rfc_emisor,
+    nombreEmisor: f.nombre_emisor,
+    rfcReceptor: f.rfc_receptor,
+    nombreReceptor: f.nombre_receptor,
     tipoComprobante: f.tipo_comprobante,
     relacion: f.relacion,
     moneda: f.moneda,
@@ -662,6 +671,7 @@ export async function getResumenPeriodo(
     motivoExclusion: f.motivo_exclusion,
     total: Number(f.total),
     conceptos: f.concepto.map((c) => ({
+      descripcion: c.descripcion,
       importe: Number(c.importe),
       categoria: c.categoria?.nombre ?? null,
       // A7: la marca de la factura gana sobre la de la categoría.
@@ -699,7 +709,7 @@ export async function getResumenPeriodo(
       })
     : undefined;
 
-  return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas, facturasCategoria };
+  return { periodo: aPeriodo(periodo as unknown as FilaPeriodo), resumen, excluidas, facturasCategoria, facturas };
 }
 
 export type OpcionPeriodo = { mesAnio: string; estado: "abierto" | "cerrado" };

@@ -388,14 +388,22 @@ export default async function ResumenPage({
       )}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled
-          title="Pendiente: tarea D1"
-          className="h-11 rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold disabled:opacity-60"
+        {/* D2: libro de Excel con hojas Resumen y Detalle, con formato. */}
+        <a
+          href={`/resumen/exportar?cliente=${cliente.id}&periodo=${periodo.mesAnio}&formato=xlsx`}
+          download
+          className="inline-flex h-11 items-center rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold text-text no-underline hover:border-accent"
         >
-          Exportar a Excel/CSV
-        </button>
+          Exportar a Excel
+        </a>
+        {/* D1: una tabla con una fila por factura, para importar a otros programas. */}
+        <a
+          href={`/resumen/exportar?cliente=${cliente.id}&periodo=${periodo.mesAnio}`}
+          download
+          className="inline-flex h-11 items-center rounded-lg border border-[#C9D1DA] bg-surface px-4 text-sm font-semibold text-text no-underline hover:border-accent"
+        >
+          Exportar a CSV
+        </a>
         <button
           type="button"
           disabled

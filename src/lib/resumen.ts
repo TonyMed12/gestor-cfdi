@@ -5,6 +5,7 @@ import { ivaAcreditable, type ImpuestoIva } from "./iva.ts";
 
 export type ImpuestoResumen = ImpuestoIva;
 export type ConceptoResumen = {
+  descripcion?: string; // solo para mostrar (detalle y exportación); no cambia el cálculo
   importe: number;
   categoria: string | null;
   // Ya resuelta con esDeducible (src/lib/deducibilidad.ts, A7): la marca de la factura gana sobre la de la categoría.
