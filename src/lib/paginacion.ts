@@ -1,7 +1,7 @@
-// Paginación de listados (B4, RNF-03): de 50 en 50, sin traer todas las filas de una vez.
+// Paginación de listados (B4, RNF-03): de 10 en 10, sin traer todas las filas de una vez.
 // Sin dependencias, para probarla sola (pruebas/paginacion.test.mjs).
 
-export const POR_PAGINA = 50;
+export const POR_PAGINA = 10;
 
 export type Pagina = { pagina: number; paginas: number; total: number; desde: number; hasta: number };
 

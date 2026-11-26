@@ -66,7 +66,7 @@ export default async function ClienteDetallePage({
   const busqueda = interpretarBusquedaUuid(textoBusqueda);
   const buscando = busqueda.tipo === "completo" || busqueda.tipo === "fragmento";
   const resultadosUuid = buscando ? await buscarFacturasPorUuid(busqueda, cliente.id) : [];
-  // B4: de 50 en 50, los más recientes primero.
+  // B4: de 10 en 10, los más recientes primero.
   // B2: filtros de la lista de archivos; lo que no es válido se ignora.
   const filtrosArchivos: FiltrosArchivos = {
     estado: (ESTADOS_ARCHIVO as readonly string[]).includes(estado ?? "") ? (estado as FiltrosArchivos["estado"]) : undefined,

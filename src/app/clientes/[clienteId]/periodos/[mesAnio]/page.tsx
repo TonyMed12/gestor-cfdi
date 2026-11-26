@@ -29,7 +29,7 @@ export default async function PeriodoClientePage({
   const cliente = await getCliente(clienteId);
   if (!cliente) notFound();
   const { pagina: paginaPedida } = await searchParams;
-  // B4: las facturas van de 50 en 50; los conteos son de todo el periodo.
+  // B4: las facturas van de 10 en 10; los conteos son de todo el periodo.
   const [datos, perfil] = await Promise.all([getPeriodoCliente(cliente.id, mesAnio, leerPagina(paginaPedida)), getPerfil()]);
   if (!datos) notFound();
   const { periodo, facturas, pagina } = datos;

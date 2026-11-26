@@ -75,7 +75,7 @@ export default async function BandejaPage({
     );
   }
 
-  // B2: filtros generales de la URL, validados. B4: de 50 en 50, en el orden elegido entre todas las que coinciden.
+  // B2: filtros generales de la URL, validados. B4: de 10 en 10, en el orden elegido entre todas las que coinciden.
   const { filtros, avisos } = leerFiltros(parametros);
   const tipoActivo = filtros.tipo ?? "";
   const [bandeja, perfil, clientes, periodosPorCliente] = await Promise.all([

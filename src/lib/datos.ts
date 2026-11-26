@@ -120,7 +120,7 @@ export type FiltrosArchivos = {
   antiguos?: boolean; // true: los más antiguos primero
 };
 
-// Archivos del cliente, de 50 en 50 (B4): la base devuelve solo la página y el total.
+// Archivos del cliente, de 10 en 10 (B4): la base devuelve solo la página y el total.
 // Filtros por estado y tipo de archivo y orden por fecha de recepción (B2).
 export async function getArchivos(
   clienteId: string,
@@ -321,7 +321,7 @@ const aFactura = (f: FilaFacturaCompleta): Factura => ({
 
 export type PaginaBandeja = { facturas: Factura[]; pagina: Pagina; porIa: number; porRegla: number };
 
-// Bandeja de revisión (RF-31) paginada de 50 en 50 (B4), con los filtros generales y el orden de B2 (RF-08).
+// Bandeja de revisión (RF-31) paginada de 10 en 10 (B4), con los filtros generales y el orden de B2 (RF-08).
 // Los filtros se aplican en la base; el orden por prioridad se calcula aquí sobre las que coinciden.
 export async function getFacturasPorRevisar(
   opciones: { filtros?: FiltrosBandeja; pagina?: number } = {},
@@ -734,7 +734,7 @@ export async function getPeriodosPorCliente(): Promise<Record<string, OpcionPeri
 }
 
 // Un periodo del cliente con sus facturas, de la más reciente a la más antigua.
-// Las facturas van de 50 en 50 (B4); los conteos por estado son de todo el periodo.
+// Las facturas van de 10 en 10 (B4); los conteos por estado son de todo el periodo.
 export async function getPeriodoCliente(
   clienteId: string,
   mesAnio: string,
@@ -886,7 +886,7 @@ export type ClaveEnUso = {
 };
 
 // Solo las claves que aparecen en facturas del despacho, no las 52 mil del catálogo.
-// De 50 en 50 (B4): conteos, descripciones y asignaciones solo de las claves de la página.
+// De 10 en 10 (B4): conteos, descripciones y asignaciones solo de las claves de la página.
 export async function getClavesEnUso(paginaPedida = 1): Promise<{ claves: ClaveEnUso[]; pagina: Pagina }> {
   const supabase = await supabaseServidor();
   const { desde, hasta } = rangoDePagina(Math.max(1, paginaPedida));

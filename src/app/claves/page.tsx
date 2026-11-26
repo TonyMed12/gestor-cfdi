@@ -10,7 +10,7 @@ export const metadata = { title: `Claves del SAT · ${NOMBRE_APP}` };
 export default async function ClavesPage({ searchParams }: { searchParams: Promise<{ pagina?: string }> }) {
   const { pagina: paginaPedida } = await searchParams;
   const perfil = await getPerfil();
-  // B4: de 50 en 50, en orden de clave.
+  // B4: de 10 en 10, en orden de clave.
   const [{ claves, pagina }, categorias] = await Promise.all([getClavesEnUso(leerPagina(paginaPedida)), getCategorias()]);
   const puedeEditar = perfil?.rol === "administrador" || perfil?.rol === "contador";
   const sinCategoria = claves.filter((c) => c.categoriaId === null).length;
