@@ -27,6 +27,8 @@ Crea dos despachos, A y B, con datos en cada tabla y archivos en el almacenamien
 | Tablas nuevas | Si se agrega una tabla sin incluirla en la prueba, o sin RLS, la prueba falla. |
 | Clave de servicio | Si aparece un uso nuevo de `supabaseAdmin()` en `src/`, la prueba falla hasta que se revise y se agregue a la tabla de abajo. |
 
+**Corrección (G5, mismo día):** en la primera versión, las dos pruebas de **lectura** contaban mal las filas de un `SELECT` (PGlite reporta `affectedRows = 0` en las lecturas), así que pasaban sin comprobar nada. Ya cuentan las filas. Siguen pasando, y se comprobó que detectan una fuga: con RLS desactivado en `clientes`, la prueba falla y señala `clientes` y `resumen_cliente`. Las pruebas de cambiar, borrar, crear y mover siempre fueron válidas.
+
 Se corre con `npm test`. Necesita `@electric-sql/pglite` como dependencia de desarrollo; si no está instalado, las pruebas de la base se omiten con aviso.
 
 ## Lo que encontró la prueba y se corrigió

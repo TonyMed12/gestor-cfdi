@@ -126,7 +126,8 @@ async function como(usuario, fn) {
 async function intentar(sql) {
   try {
     const r = await db.query(sql);
-    return r.affectedRows ?? r.rows.length;
+    // Un SELECT reporta affectedRows = 0 aunque traiga filas: se cuentan sus filas. UPDATE/DELETE/INSERT: affectedRows.
+    return r.rows.length > 0 ? r.rows.length : (r.affectedRows ?? 0);
   } catch {
     return "error";
   }
@@ -226,7 +227,6 @@ test("G1: nadie de A crea datos dentro de B ni que apunten a datos de B", { skip
     "regla de emisor de A con categoría de B": `insert into public.regla_emisor (despacho_id, rfc, categoria_id) values ('${DESPACHOS.A.despacho}', 'XEXX010101000', '${B.categoria}')`,
     "clave en B": `insert into public.clave_categoria (despacho_id, clave, categoria_id) values ('${B.despacho}', '${DESPACHOS.A.clave}', '${B.categoria}') on conflict do nothing`,
     "sugerencia en una factura de B": `insert into public.sugerencia (factura_id, modelo, version_modelo, confianza, categoria_sugerida, explicacion) values ('${B.factura}', 'm', '1', 1, 'X', 'X')`,
-    "bitácora a nombre de alguien de B": `insert into public.bitacora (usuario_id, accion) values ('${B.admin}', 'aprobo')`,
     "bitácora sobre una factura de B": `insert into public.bitacora (factura_id, accion, detalle) values ('${B.factura}', 'aprobo', '{"motivo_periodo_cerrado": "Intento desde otro despacho"}')`,
     "historial de un archivo de B": `insert into public.archivo_historial (archivo_id, estado) values ('${B.archivo}', 'error')`,
     "historial de clasificación de B": `insert into public.clasificacion_historial (concepto_id, categoria_nueva) values ('${B.concepto}', 'X')`,
@@ -244,6 +244,11 @@ test("G1: nadie de A crea datos dentro de B ni que apunten a datos de B", { skip
     }
   }
   assert.deepEqual(logrados, []);
+  // Escribir en la bitácora a nombre de alguien de B: la base pone como autor a quien está en sesión (script 24),
+  // así que el registro queda a nombre de A. La huella de B (que incluye su bitácora) no debe cambiar.
+  for (const [, usuario] of USUARIOS_A.filter(([, u]) => u)) {
+    await como(usuario, () => intentar(`insert into public.bitacora (usuario_id, accion) values ('${B.admin}', 'aprobo')`));
+  }
   assert.deepEqual(await huella(), antes, "Aparecieron filas en B");
 });
 
